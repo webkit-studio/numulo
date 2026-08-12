@@ -1,0 +1,170 @@
+@import "../styles/tokens.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--numo-bg);
+  color: var(--numo-text);
+  font-family: var(--numo-font-sans);
+  font-size: var(--numo-text-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--numo-focus-ring);
+  border-radius: var(--numo-radius-sm);
+}
+
+/* Numbers line up in columns — money is read by comparison, not by reading. */
+.numo-numeric {
+  font-family: var(--numo-font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ login */
+
+.login-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--numo-space-5);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--numo-surface);
+  border: 1px solid var(--numo-border);
+  border-radius: var(--numo-radius-lg);
+  box-shadow: var(--numo-shadow-card);
+  padding: var(--numo-space-6);
+}
+
+.login-wordmark {
+  margin: 0;
+  font-size: var(--numo-text-xl);
+  letter-spacing: -0.02em;
+}
+
+.login-lede {
+  margin: var(--numo-space-2) 0 var(--numo-space-5);
+  color: var(--numo-text-muted);
+  font-size: var(--numo-text-sm);
+}
+
+.login-form {
+  display: grid;
+  gap: var(--numo-space-2);
+}
+
+.login-form label {
+  font-size: var(--numo-text-sm);
+  color: var(--numo-text-muted);
+}
+
+.login-form input {
+  padding: var(--numo-space-3);
+  border: 1px solid var(--numo-border);
+  border-radius: var(--numo-radius-md);
+  background: var(--numo-bg);
+}
+
+.login-form button {
+  margin-top: var(--numo-space-2);
+  padding: var(--numo-space-3);
+  border: 0;
+  border-radius: var(--numo-radius-md);
+  background: var(--numo-accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.login-error {
+  margin: 0;
+  color: var(--numo-negative);
+  font-size: var(--numo-text-sm);
+}
+
+/* --------------------------------------------------- skeleton (phase 1) */
+
+.skeleton-screen {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--numo-space-6) var(--numo-space-5);
+}
+
+.skeleton-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--numo-space-5);
+}
+
+.skeleton-card {
+  background: var(--numo-surface);
+  border: 1px solid var(--numo-border);
+  border-radius: var(--numo-radius-lg);
+  box-shadow: var(--numo-shadow-card);
+  padding: var(--numo-space-5);
+}
+
+.skeleton-card h2 {
+  margin: 0 0 var(--numo-space-2);
+  font-size: var(--numo-text-lg);
+}
+
+.skeleton-card p {
+  margin: 0 0 var(--numo-space-5);
+  color: var(--numo-text-muted);
+  font-size: var(--numo-text-sm);
+}
+
+.skeleton-stats {
+  display: flex;
+  gap: var(--numo-space-6);
+  margin: 0;
+}
+
+.skeleton-stats dt {
+  color: var(--numo-text-muted);
+  font-size: var(--numo-text-sm);
+}
+
+.skeleton-stats dd {
+  margin: var(--numo-space-1) 0 0;
+  font-size: var(--numo-text-xl);
+}
+
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--numo-text-muted);
+  font-size: var(--numo-text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
