@@ -2,6 +2,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse, type NextRequest } from "next/server";
 import { getDb } from "@/db/getDb";
 import { runSeedImport } from "@/lib/import/seed-import";
+import { withJsonErrors } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ async function archive(filename: string, text: string): Promise<string | null> {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withJsonErrors(async (request: NextRequest) => {
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
 
@@ -52,4 +53,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

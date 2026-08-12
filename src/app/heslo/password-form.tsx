@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiUrl } from "@/lib/base-path";
+import { postJson } from "@/lib/client/post-json";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
 
 type Stage = "ask-email" | "set-password" | "emailed";
@@ -22,26 +23,15 @@ export function PasswordForm({ token }: { token: string | null }) {
     setPending(true);
     setError(null);
 
-    try {
-      const response = await fetch(apiUrl("/api/auth/password-help"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const body = (await response.json()) as {
-        bootstrap?: boolean;
-        sent?: boolean;
-        error?: string;
-      };
+    const result = await postJson<{ bootstrap?: boolean; sent?: boolean }>(
+      apiUrl("/api/auth/password-help"),
+      { email },
+    );
 
-      if (body.bootstrap) setStage("set-password");
-      else if (response.ok && body.sent) setStage("emailed");
-      else setError(body.error ?? "Nepovedlo se to. Zkus to znovu.");
-    } catch {
-      setError("Nepovedlo se to. Zkontroluj připojení.");
-    } finally {
-      setPending(false);
-    }
+    if (result.data?.bootstrap) setStage("set-password");
+    else if (result.ok && result.data?.sent) setStage("emailed");
+    else setError(result.error);
+    setPending(false);
   }
 
   async function submitPassword(event: React.FormEvent) {
@@ -49,26 +39,22 @@ export function PasswordForm({ token }: { token: string | null }) {
     setPending(true);
     setError(null);
 
-    try {
-      const response = await fetch(apiUrl("/api/auth/set-password"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, token: token ?? "" }),
-      });
-      const body = (await response.json()) as { error?: string };
+    const result = await postJson(apiUrl("/api/auth/set-password"), {
+      email,
+      password,
+      token: token ?? "",
+    });
 
-      if (!response.ok) {
-        setError(body.error ?? "Heslo se nepodařilo nastavit.");
-        setPending(false);
-        return;
-      }
-
-      router.replace("/");
-      router.refresh();
-    } catch {
-      setError("Nepovedlo se to. Zkontroluj připojení.");
+    if (!result.ok) {
+      setError(result.error);
       setPending(false);
+      return;
     }
+
+    // Navigation is deliberately outside the request handling: a router error
+    // must not be reported as "the password could not be set" when it was.
+    router.replace("/");
+    router.refresh();
   }
 
   if (stage === "emailed") {
