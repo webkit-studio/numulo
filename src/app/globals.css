@@ -109,6 +109,18 @@ input {
   font-size: var(--numo-text-sm);
 }
 
+.login-secondary {
+  margin-top: var(--numo-space-2);
+  color: var(--numo-text-muted);
+  font-size: var(--numo-text-sm);
+  text-align: center;
+}
+
+.login-form p {
+  margin: 0;
+  font-size: var(--numo-text-sm);
+}
+
 /* --------------------------------------------------- skeleton (phase 1) */
 
 .skeleton-screen {

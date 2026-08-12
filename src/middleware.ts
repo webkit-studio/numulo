@@ -1,17 +1,24 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
+import { SESSION_COOKIE, readSessionToken } from "@/lib/auth/session";
 
 /**
- * Reachable without a session. Paths are basePath-relative — Next strips
- * `/numo` before middleware sees them.
+ * Reachable without a session. Paths are basePath-relative — Next strips the
+ * mount path before middleware sees them.
  */
-const PUBLIC_PATHS = new Set(["/login", "/api/auth/login", "/api/auth/logout"]);
+const PUBLIC_PATHS = new Set([
+  "/login",
+  "/heslo",
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/api/auth/password-help",
+  "/api/auth/set-password",
+]);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (PUBLIC_PATHS.has(pathname)) return NextResponse.next();
-  if (await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value)) {
+  if (await readSessionToken(request.cookies.get(SESSION_COOKIE)?.value)) {
     return NextResponse.next();
   }
 

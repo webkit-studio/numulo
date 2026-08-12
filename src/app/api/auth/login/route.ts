@@ -1,30 +1,51 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getDb } from "@/db/getDb";
+import { verifyPassword } from "@/lib/auth/password";
 import {
   SESSION_COOKIE,
-  checkPassword,
   createSessionToken,
   sessionCookieOptions,
 } from "@/lib/auth/session";
+import { findUserByEmail } from "@/lib/auth/users";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  let email = "";
   let password = "";
   try {
-    const body = (await request.json()) as { password?: unknown };
+    const body = (await request.json()) as {
+      email?: unknown;
+      password?: unknown;
+    };
+    if (typeof body.email === "string") email = body.email;
     if (typeof body.password === "string") password = body.password;
   } catch {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   }
 
-  if (!checkPassword(password)) {
-    return NextResponse.json({ error: "invalid_password" }, { status: 401 });
+  const user = await findUserByEmail(getDb(), email);
+
+  // One message for "no such e-mail" and "wrong password" alike, so the login
+  // form cannot be used to find out who has an account here.
+  const matches =
+    user !== null &&
+    (await verifyPassword(password, {
+      hash: user.passwordHash,
+      salt: user.passwordSalt,
+    }));
+
+  if (!user || !matches) {
+    return NextResponse.json({ error: "invalid_credentials" }, { status: 401 });
   }
 
-  const response = NextResponse.json({ ok: true });
+  const response = NextResponse.json({
+    ok: true,
+    user: { id: user.id, name: user.name },
+  });
   response.cookies.set(
     SESSION_COOKIE,
-    await createSessionToken(),
+    await createSessionToken(user.id),
     sessionCookieOptions,
   );
   return response;
