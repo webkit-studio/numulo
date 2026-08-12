@@ -4,6 +4,7 @@ import { issueResetToken } from "@/lib/auth/reset-tokens";
 import { findUserByEmail } from "@/lib/auth/users";
 import { BASE_PATH } from "@/lib/base-path";
 import { emailConfigured, passwordResetEmail, sendEmail } from "@/lib/email/send";
+import { withJsonErrors } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export const dynamic = "force-dynamic";
  *                            once a password exists.
  *  - known, has a password  → e-mails a single-use link
  */
-export async function POST(request: NextRequest) {
+export const POST = withJsonErrors(async (request: NextRequest) => {
   let email = "";
   try {
     const body = (await request.json()) as { email?: unknown };
@@ -61,4 +62,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ sent: true });
-}
+});

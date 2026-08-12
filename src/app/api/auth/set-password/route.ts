@@ -8,10 +8,11 @@ import {
   sessionCookieOptions,
 } from "@/lib/auth/session";
 import { findUserByEmail, findUserById, setUserPassword } from "@/lib/auth/users";
+import { withJsonErrors } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: NextRequest) {
+export const POST = withJsonErrors(async (request: NextRequest) => {
   let email = "";
   let password = "";
   let token = "";
@@ -63,4 +64,4 @@ export async function POST(request: NextRequest) {
     sessionCookieOptions,
   );
   return response;
-}
+});

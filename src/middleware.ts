@@ -12,6 +12,8 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/logout",
   "/api/auth/password-help",
   "/api/auth/set-password",
+  // Answers only until the first password exists — see the route.
+  "/api/setup-check",
 ]);
 
 export async function middleware(request: NextRequest) {

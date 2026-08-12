@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiUrl } from "@/lib/base-path";
+import { postJson } from "@/lib/client/post-json";
 
 export function LoginForm({ next }: { next: string }) {
   const router = useRouter();
@@ -17,25 +18,23 @@ export function LoginForm({ next }: { next: string }) {
     setPending(true);
     setError(null);
 
-    try {
-      const response = await fetch(apiUrl("/api/auth/login"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    const result = await postJson(apiUrl("/api/auth/login"), {
+      email,
+      password,
+    });
 
-      if (!response.ok) {
-        setError("E-mail nebo heslo nesedí.");
-        setPending(false);
-        return;
-      }
-
-      router.replace(next);
-      router.refresh();
-    } catch {
-      setError("Přihlášení se nepovedlo. Zkontroluj připojení.");
+    if (!result.ok) {
+      // 401 is the ordinary "wrong credentials"; anything else is a real
+      // fault and deserves its own message rather than being papered over.
+      setError(
+        result.status === 401 ? "E-mail nebo heslo nesedí." : result.error,
+      );
       setPending(false);
+      return;
     }
+
+    router.replace(next);
+    router.refresh();
   }
 
   return (
