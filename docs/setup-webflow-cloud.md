@@ -18,17 +18,22 @@ nich zkontroluju, že to nahoře opravdu běží.
 3. Vyber ten repozitář a klikni **Import**.
 4. Pojmenuj app **numo**.
 
-## 2. Nastav mount path na `/numo`
+## 2. Mount path
 
-Při zakládání prostředí tě Webflow vyzve k zadání **mount path**. Zadej:
+Při zakládání prostředí tě Webflow vyzve k zadání **mount path**. Je jedno,
+co zvolíš — kód se přizpůsobí:
 
-```
-/numo
-```
+- **kořen (`/`)** — appka poběží na `https://tvoje-doména/`. Tohle máš
+  nastavené teď a nic dalšího dělat nemusíš.
+- **podcesta (`/numo`)** — appka poběží na `https://tvoje-doména/numo`.
+  V tom případě přidej do proměnných prostředí (krok 4)
+  `NEXT_PUBLIC_BASE_PATH` = `/numo`.
 
-> **Tohle musí sedět přesně.** V kódu je `basePath: "/numo"` v souboru
-> `next.config.ts`. Když zvolíš jinou cestu, appka se nenačte —
-> napiš mi to a já cestu v kódu změním.
+Mount path svého prostředí poznáš v logu deploye na řádku
+`COSMIC_MOUNT_PATH:`.
+
+> Původně jsem měl cestu `/numo` natvrdo v kódu a první deploy na tom spadl.
+> Teď se bere z proměnné prostředí a obě varianty jsou odzkoušené.
 
 ## 3. Založ dvě prostředí
 
@@ -45,11 +50,12 @@ můžeš rozbít, jak chceš, produkce o tom neví.
 V každém prostředí (produkce i staging) otevři **Settings → Environment
 variables** a přidej:
 
-| Název                | Hodnota                              | Povinné |
-| -------------------- | ------------------------------------ | ------- |
-| `NUMO_PASSWORD`      | heslo do appky, které si vymyslíš    | ano     |
-| `NUMO_SESSION_SECRET`| dlouhý náhodný řetězec               | ne, ale doporučuju |
-| `ANTHROPIC_API_KEY`  | klíč z console.anthropic.com         | ne      |
+| Název                  | Hodnota                            | Povinné |
+| ---------------------- | ---------------------------------- | ------- |
+| `NUMO_PASSWORD`        | heslo do appky, které si vymyslíš  | ano     |
+| `NUMO_SESSION_SECRET`  | dlouhý náhodný řetězec             | ne, ale doporučuju |
+| `ANTHROPIC_API_KEY`    | klíč z console.anthropic.com       | ne      |
+| `NEXT_PUBLIC_BASE_PATH`| jen když mount path není kořen     | ne      |
 
 Poznámky:
 
@@ -76,7 +82,8 @@ Klikni **Deploy**. Webflow Cloud sám:
 
 ## 6. Zkontroluj, že to jede
 
-Otevři `https://<tvoje-doména>/numo`. Máš vidět:
+Otevři adresu prostředí (při kořenovém mountu `https://<tvoje-doména>/`).
+Máš vidět:
 
 1. **přihlašovací obrazovku** — appka je celá za heslem, tohle je správně,
 2. po zadání hesla stránku, kde stojí **Účty 1 · Uživatelé 2 · Kategorie 11**.
@@ -88,7 +95,8 @@ a databáze odpovídá. To je celý obsah fáze 1.
 
 | Co vidíš                          | Co to znamená                                          |
 | --------------------------------- | ------------------------------------------------------ |
-| 404                               | mount path není `/numo` — napiš mi, jaký je             |
+| `could not find package.json`     | Webflow staví větev, kde kód ještě není — zkontroluj, že prostředí míří na `main` a že je tam smergovaný PR |
+| 404 nebo rozbité styly            | `NEXT_PUBLIC_BASE_PATH` nesedí s `COSMIC_MOUNT_PATH` z logu deploye |
 | „Databáze neodpovídá"             | migrace neproběhly; pošli mi log z deploye              |
 | Heslo nikdy neprojde              | `NUMO_PASSWORD` není nastavené v tom správném prostředí |
 | Účty 0 · Uživatelé 0              | migrace proběhly, ale seed ne; pošli mi log             |

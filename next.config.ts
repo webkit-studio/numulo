@@ -1,16 +1,30 @@
 import type { NextConfig } from "next";
 
 /**
- * `basePath` / `assetPrefix` must match the mount path of the Webflow Cloud
- * environment. numo is mounted at `/numo`.
+ * The mount path of the Webflow Cloud environment. It is chosen when the
+ * environment is created and shows up in the build log as COSMIC_MOUNT_PATH —
+ * hard-coding it here means a remount silently 404s the whole app.
  *
- * Never hard-code the mount path anywhere else — import `BASE_PATH` from
- * `src/lib/base-path.ts` instead so a future remount is a one-line change.
+ * Resolution order:
+ *   1. NEXT_PUBLIC_BASE_PATH — set this explicitly if the automatic value is wrong
+ *   2. BASE_URL — provided by Webflow Cloud
+ *   3. "" — the environment is mounted at the domain root
  */
+function resolveBasePath(): string {
+  const raw = process.env.NEXT_PUBLIC_BASE_PATH ?? process.env.BASE_URL ?? "";
+  const trimmed = raw.trim().replace(/\/+$/, "");
+  if (trimmed === "" || trimmed === "/") return "";
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+const basePath = resolveBasePath();
+
 const nextConfig: NextConfig = {
-  basePath: "/numo",
-  assetPrefix: "/numo",
+  basePath,
+  assetPrefix: basePath,
   reactStrictMode: true,
+  // Inlined into the client bundle so `apiUrl()` builds correct fetch URLs.
+  env: { NEXT_PUBLIC_BASE_PATH: basePath },
 };
 
 export default nextConfig;

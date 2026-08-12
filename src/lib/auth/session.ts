@@ -1,4 +1,4 @@
-import { BASE_PATH } from "@/lib/base-path";
+import { COOKIE_PATH } from "@/lib/base-path";
 import { getEnvVar } from "@/lib/env";
 
 export const SESSION_COOKIE = "numo_session";
@@ -101,6 +101,6 @@ export const sessionCookieOptions = {
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
   // Scoped to the mount path so the cookie never leaks to the rest of the site.
-  path: BASE_PATH,
+  path: COOKIE_PATH,
   maxAge: SESSION_TTL_SECONDS,
 } as const;
