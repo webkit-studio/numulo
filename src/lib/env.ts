@@ -3,7 +3,10 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 type NumoEnv = Partial<
   Pick<
     CloudflareEnv,
-    "NUMO_PASSWORD" | "NUMO_SESSION_SECRET" | "ANTHROPIC_API_KEY"
+    | "NUMO_SESSION_SECRET"
+    | "ANTHROPIC_API_KEY"
+    | "RESEND_API_KEY"
+    | "NUMO_MAIL_FROM"
   >
 >;
 

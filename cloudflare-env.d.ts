@@ -6,10 +6,15 @@ interface CloudflareEnv {
   DB: D1Database;
   /** Webflow Cloud Object Storage (R2) — raw CSV archive */
   IMPORTS: R2Bucket;
-  /** Shared household password for the login gate. Set in the Webflow Cloud UI. */
-  NUMO_PASSWORD?: string;
-  /** Optional: dedicated cookie-signing secret. Falls back to NUMO_PASSWORD. */
+  /**
+   * Optional cookie-signing secret. When absent, numo generates one on first
+   * use and keeps it in the database, so nothing has to be configured.
+   */
   NUMO_SESSION_SECRET?: string;
+  /** Resend API key. Without it the "forgotten password" e-mail cannot be sent. */
+  RESEND_API_KEY?: string;
+  /** Sender address for those e-mails, e.g. "numo <numo@svobs.cz>". */
+  NUMO_MAIL_FROM?: string;
   /** Claude API key. When absent, AI features stay hidden and the app still works. */
   ANTHROPIC_API_KEY?: string;
 }

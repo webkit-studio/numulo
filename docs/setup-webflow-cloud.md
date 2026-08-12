@@ -52,10 +52,17 @@ variables** a přidej:
 
 | Název                  | Hodnota                            | Povinné |
 | ---------------------- | ---------------------------------- | ------- |
-| `NUMO_PASSWORD`        | heslo do appky, které si vymyslíš  | ano     |
-| `NUMO_SESSION_SECRET`  | dlouhý náhodný řetězec             | ne, ale doporučuju |
+| `RESEND_API_KEY`       | klíč z resend.com                  | ne, ale bez něj nefunguje obnova zapomenutého hesla |
+| `NUMO_MAIL_FROM`       | např. `numo <numo@svobs.cz>`       | ne      |
 | `ANTHROPIC_API_KEY`    | klíč z console.anthropic.com       | ne      |
+| `NUMO_SESSION_SECRET`  | dlouhý náhodný řetězec             | ne      |
 | `NEXT_PUBLIC_BASE_PATH`| jen když mount path není kořen     | ne      |
+
+**Žádné heslo se tu nenastavuje.** Přihlašuje se e-mailem a heslem, které si
+každý zvolí sám při prvním přihlášení — viz krok 6.
+
+`NUMO_SESSION_SECRET` nechávat nemusíš: když ho nenastavíš, numo si ho při
+prvním spuštění vygeneruje samo a uloží do databáze.
 
 Poznámky:
 
@@ -83,13 +90,39 @@ Klikni **Deploy**. Webflow Cloud sám:
 ## 6. Zkontroluj, že to jede
 
 Otevři adresu prostředí (při kořenovém mountu `https://<tvoje-doména>/`).
-Máš vidět:
+Máš vidět **přihlašovací obrazovku** — appka je celá za přihlášením, to je
+správně.
 
-1. **přihlašovací obrazovku** — appka je celá za heslem, tohle je správně,
-2. po zadání hesla stránku, kde stojí **Účty 1 · Uživatelé 2 · Kategorie 11**.
+### První přihlášení
 
-Když tam ta čísla jsou, znamená to, že appka běží, brána hesla drží
-a databáze odpovídá. To je celý obsah fáze 1.
+V databázi jsou dva účty: `lukas@svobs.cz` a `vera@svobs.cz`. Heslo zatím
+ani jeden nemá.
+
+1. Klikni **„Nastavit nebo zapomenuté heslo"**.
+2. Zadej svůj e-mail a klikni **Pokračovat**.
+3. Protože heslo ještě nemáš, appka tě rovnou pustí si ho nastavit
+   (aspoň 10 znaků). Po uložení jsi přihlášený.
+4. Věrka udělá totéž se svým e-mailem.
+
+> **Udělej to hned po prvním deployi.** Dokud si heslo nenastavíš, mohl by
+> si ho pro tvůj e-mail nastavit kdokoli, kdo tu adresu zná. Jakmile heslo
+> existuje, tahle cesta se pro daný účet **natrvalo zavře** a další změna už
+> jde jen přes odkaz v e-mailu.
+
+Potřebuješ jiné e-maily než `@svobs.cz`? Řekni a změním je migrací —
+registrace je záměrně jen pro adresy, které v databázi už jsou, aby si
+cizí člověk nemohl založit přístup k vašim financím.
+
+### Zapomenuté heslo
+
+Stejná cesta: e-mail → Pokračovat. Když už heslo existuje, přijde odkaz
+platný hodinu a použitelný jednou. **Tohle vyžaduje `RESEND_API_KEY`** —
+bez něj appka řekne, že odesílání není nastavené.
+
+### Kontrola, že databáze žije
+
+Po přihlášení musí stránka ukazovat **Účty 1 · Uživatelé 2 · Kategorie 11**.
+Když tam ta čísla jsou, appka běží, přihlášení drží a databáze odpovídá.
 
 ### Když něco nesedí
 
@@ -98,7 +131,8 @@ a databáze odpovídá. To je celý obsah fáze 1.
 | `could not find package.json`     | Webflow staví větev, kde kód ještě není — zkontroluj, že prostředí míří na `main` a že je tam smergovaný PR |
 | 404 nebo rozbité styly            | `NEXT_PUBLIC_BASE_PATH` nesedí s `COSMIC_MOUNT_PATH` z logu deploye |
 | „Databáze neodpovídá"             | migrace neproběhly; pošli mi log z deploye              |
-| Heslo nikdy neprojde              | `NUMO_PASSWORD` není nastavené v tom správném prostředí |
+| „E-mail nebo heslo nesedí"        | heslo ještě nemáš — jdi přes „Nastavit nebo zapomenuté heslo" |
+| „Odesílání e-mailů není nastavené"| chybí `RESEND_API_KEY`                                  |
 | Účty 0 · Uživatelé 0              | migrace proběhly, ale seed ne; pošli mi log             |
 
 ---

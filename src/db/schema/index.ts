@@ -20,9 +20,51 @@ const now = sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`;
 
 /* ------------------------------------------------------------------ users */
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
+export const users = sqliteTable(
+  "users",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    /** Login identity. Lowercased on write so comparison is plain equality. */
+    email: text("email"),
+    /** PBKDF2-SHA256, base64url. Null until the person sets a password. */
+    passwordHash: text("password_hash"),
+    passwordSalt: text("password_salt"),
+    passwordSetAt: text("password_set_at"),
+    createdAt: text("created_at").notNull().default(now),
+  },
+  (t) => [uniqueIndex("users_email").on(t.email)],
+);
+
+/**
+ * Single-use tokens behind the "set / forget password" e-mail link.
+ * Only the hash is stored — a leaked database must not hand out live links.
+ */
+export const passwordResetTokens = sqliteTable(
+  "password_reset_tokens",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: text("expires_at").notNull(),
+    usedAt: text("used_at"),
+    createdAt: text("created_at").notNull().default(now),
+  },
+  (t) => [
+    uniqueIndex("password_reset_tokens_hash").on(t.tokenHash),
+    index("password_reset_tokens_user").on(t.userId),
+  ],
+);
+
+/**
+ * Small key/value store for things the app generates for itself — currently
+ * the session signing secret, so numo works without anyone configuring one.
+ */
+export const appConfig = sqliteTable("app_config", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
   createdAt: text("created_at").notNull().default(now),
 });
 
@@ -355,6 +397,7 @@ export const formatProfiles = sqliteTable(
 
 export type Account = typeof accounts.$inferSelect;
 export type User = typeof users.$inferSelect;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type Rule = typeof rules.$inferSelect;

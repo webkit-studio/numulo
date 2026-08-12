@@ -76,18 +76,48 @@ Jakmile dorazí spec, přepíšu to migrací. Dokud v `transactions` nic není,
 je přepis bezbolestný — proto to chci vyřešit **před** seed importem
 master CSV.
 
-## 5. Bezpečnost brány hesla
+## 4b. Přihlašování e-mailem místo sdíleného hesla
+
+Zadání mělo jednu bránu se sdíleným `NUMO_PASSWORD` a „funkční pozvánky
+a správa rolí" byly non-goal. Na tvoji žádost je z toho **e-mail + heslo
+pro každého zvlášť**.
+
+Co jsem udělal jinak, než jsi psal, a proč:
+
+- **Bez veřejné registrace.** Heslo si lze nastavit jen k e-mailu, který
+  v databázi už je (`lukas@svobs.cz`, `vera@svobs.cz`). Otevřená registrace
+  na veřejné adrese znamená, že si kdokoli založí účet — u appky s vašimi
+  financemi to nechci. Přidat další adresu je jednořádková migrace.
+- **První nastavení hesla nevyžaduje e-mail.** Jinak by bylo první
+  přihlášení závislé na `RESEND_API_KEY` a bez něj by se nedalo dovnitř
+  vůbec. Cesta se pro daný účet po prvním nastavení natrvalo zavře.
+  Cena: mezi deployem a tvým prvním přihlášením by si heslo mohl nastavit
+  někdo, kdo zná adresu i e-mail. Proto to udělej hned.
+- **PBKDF2-SHA256, 210 000 iterací** (číslo z OWASP). bcrypt ani argon2 na
+  Workers nejedou — jsou to nativní moduly.
+- **Podpisový klíč session** se generuje sám a ukládá do databáze, když
+  `NUMO_SESSION_SECRET` není nastavený. Nulová konfigurace.
+- **Odkaz na obnovu hesla** platí hodinu, jde použít jednou, v databázi je
+  jen jeho hash. Změna hesla zneplatní všechny nevyužité odkazy.
+- Přihlašovací formulář nerozlišuje „neznámý e-mail" a „špatné heslo",
+  aby nešel použít ke zjišťování, kdo tu účet má.
+
+Rozesílání jde přes **Resend** (`RESEND_API_KEY`). Bez klíče appka funguje,
+jen obnova zapomenutého hesla řekne, že odesílání není nastavené.
+
+## 5. Bezpečnost přihlášení
 
 - Cookie je podepsaná HMAC-SHA256 (Web Crypto, edge-safe), `httpOnly`,
-  `Secure` v produkci, `SameSite=Lax`, scope `/numo` — na zbytek webu
-  se neposílá. Platnost 30 dní.
+  `Secure` v produkci, `SameSite=Lax`, scope podle mount pathu — na zbytek
+  webu se neposílá. Platnost 30 dní. Nese id přihlášeného uživatele.
 - Porovnání hesla i podpisu je časově konstantní.
-- Ověřeno end-to-end: neexistující cookie, podvržený podpis i posunutá
-  expirace vedou na přihlášení; `/numo/api/*` vrací 401 místo redirectu.
+- Ověřeno end-to-end: neexistující cookie, podvržený podpis, **přepsané id
+  uživatele** i posunutá expirace vedou na přihlášení; `/api/*` vrací 401
+  místo redirectu.
 - **Co tam není: omezení počtu pokusů o heslo.** Appka bude na veřejné
-  adrese, takže hrubá síla je reálná. Proto to heslo aspoň 16 znaků.
-  Když budeš chtít, dodělám zámek po N pokusech — je to malá práce,
-  jen jsem ji do fáze 1 nepašoval bez domluvy.
+  adrese, takže hrubá síla je reálná. PBKDF2 s 210 000 iteracemi ji dělá
+  drahou, ale zámek po N pokusech to nenahrazuje. Když budeš chtít,
+  dodělám ho — je to malá práce, jen ji nechci pašovat bez domluvy.
 
 ## 6. Verze balíčků
 
@@ -97,9 +127,8 @@ a odzkoušeno lokálně na Workers runtime (`npm run preview`), takže build,
 který spustí Webflow Cloud, je ověřený. Kdyby jejich build přesto spadl,
 stačí verzi stáhnout zpátky na 1.6.5.
 
-Nenainstaloval jsem zatím **PapaParse** ani `better-sqlite3` — první je
-potřeba až na import (fáze 2), druhý jen pro lokální SQLite a nese s sebou
-nativní build. Doinstaluju je, až budou k něčemu.
+**PapaParse** je doinstalovaný (import CSV). `better-sqlite3` ne — je jen
+pro lokální SQLite a nese s sebou nativní build, který zatím k ničemu není.
 
 ---
 
@@ -107,14 +136,16 @@ nativní build. Doinstaluju je, až budou k něčemu.
 
 ### Tvrdé zastávky (bez nich se fáze 2 nedá začít)
 
-1. **Vzorky CSV** — master CSV se 7 měsíci historie, reálný výpis z Air Bank,
-   reálný výpis z Revolutu. Mapování sloupců nechci stavět z hlavy.
-   Klidně anonymizované částky, ale skutečná struktura souboru.
-2. **Složení fingerprintu** — návrh ti předložím nad reálným vzorkem.
-3. **Design tokeny** — viz `docs/design-tokens-mapping.md`.
-4. **Počáteční stav Rezervy** — kolik máte dneska celkem na sledovaných
-   účtech (bez dluhů, ty se odečtou samy) a k jakému datu. Tohle datum je
-   zároveň hranice, kde končí master CSV a začínají reálné výpisy.
+1. ~~Master CSV~~ — **hotovo**, naimportováno (1305 řádků, 2026-01 až
+   2026-07). Pořád chybí **reálný výpis z Air Bank a z Revolutu** pro
+   běžný měsíční import — profily pro ně nechci stavět z hlavy.
+2. **Složení fingerprintu** — návrh leží v `docs/import-master-csv.md`
+   a je postavený nad skutečnými daty. Naivní složení z promptu slučovalo
+   33 řádků; přidal jsem `own_account` a pořadí výskytu. Ke schválení.
+3. **Design tokeny** — viz `docs/design-tokens-mapping.md`. Pořád blokované.
+4. **Počáteční stav Rezervy** — datum už mám (`2026-07-31`, poslední řádek
+   master CSV). Chybí **částka**: kolik máte k tomu dni celkem na
+   sledovaných účtech, bez dluhů — ty se odečtou samy.
 
 ### Věcné otázky, kde jsem nechtěl hádat
 
@@ -138,6 +169,11 @@ nativní build. Doinstaluju je, až budou k něčemu.
    stran a nechat ho jen v Cíli měsíce. Co je blíž tomu, jak to čtete?
 
 7. **Vzorec denního limitu a obálek** — čekám na spec §4.
+
+7b. **Podnikání** — rozhodnuto: zatím jen příznak `is_business`, samostatný
+   účet později. V master CSV je zatím u všech řádků `false`; než se označí,
+   budou průměry domácnosti zkreslené o fakturační příjmy (≈300 548 Kč)
+   a vývojářské nástroje (≈27 123 Kč). Rozpad je v `docs/import-master-csv.md`.
 
 8. **Mount path** — počítám s `/numo`. Když ve Webflow Cloudu zvolíš jinou
    cestu, změním jeden řádek v `next.config.ts`.

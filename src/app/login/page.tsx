@@ -21,7 +21,7 @@ export default async function LoginPage({
     <main className="login-screen">
       <div className="login-card">
         <h1 className="login-wordmark">numo</h1>
-        <p className="login-lede">Rodinné finance. Zadej heslo domácnosti.</p>
+        <p className="login-lede">Rodinné finance. Přihlas se e-mailem.</p>
         <LoginForm next={safeNext(params.next)} />
       </div>
     </main>

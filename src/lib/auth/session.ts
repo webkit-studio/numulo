@@ -1,9 +1,9 @@
 import { COOKIE_PATH } from "@/lib/base-path";
-import { getEnvVar } from "@/lib/env";
+import { getSessionSecret } from "./secret";
 
 export const SESSION_COOKIE = "numo_session";
 
-/** 30 days — Věrka keeps numo on her home screen and shouldn't re-login often. */
+/** 30 days — numo lives on a home screen and shouldn't ask twice a week. */
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 const encoder = new TextEncoder();
@@ -31,10 +31,9 @@ async function hmac(secret: string, message: string): Promise<string> {
 }
 
 /** Length-independent, branch-free string compare. */
-function timingSafeEqual(a: string, b: string): boolean {
+export function timingSafeEqual(a: string, b: string): boolean {
   const aBytes = encoder.encode(a);
   const bBytes = encoder.encode(b);
-  // Compare a fixed number of bytes so the loop count never depends on input.
   const length = Math.max(aBytes.length, bBytes.length);
   let diff = aBytes.length ^ bBytes.length;
   for (let i = 0; i < length; i++) {
@@ -43,56 +42,49 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-function signingSecret(): string {
-  // A dedicated secret survives a password change; otherwise rotating the
-  // password logs everyone out, which is an acceptable fallback.
-  const secret = getEnvVar("NUMO_SESSION_SECRET") ?? getEnvVar("NUMO_PASSWORD");
-  if (!secret) {
-    throw new Error(
-      "NUMO_PASSWORD is not set — the app cannot verify logins. " +
-        "Set it in the Webflow Cloud environment variables.",
-    );
-  }
-  return secret;
+export interface Session {
+  userId: number;
+  expiresAt: number;
 }
 
-/** True when the submitted password matches the configured one. */
-export function checkPassword(submitted: string): boolean {
-  const expected = getEnvVar("NUMO_PASSWORD");
-  if (!expected) return false;
-  return timingSafeEqual(submitted, expected);
-}
-
-/** `{expiresAtSeconds}.{signature}` */
-export async function createSessionToken(now = Date.now()): Promise<string> {
+/** `{userId}.{expiresAtSeconds}.{signature}` */
+export async function createSessionToken(
+  userId: number,
+  now = Date.now(),
+): Promise<string> {
   const expiresAt = Math.floor(now / 1000) + SESSION_TTL_SECONDS;
-  const payload = String(expiresAt);
-  const signature = await hmac(signingSecret(), payload);
-  return `${payload}.${signature}`;
+  const payload = `${userId}.${expiresAt}`;
+  return `${payload}.${await hmac(await getSessionSecret(), payload)}`;
 }
 
-export async function verifySessionToken(
+/** The signed-in user, or null. Never throws — a bad cookie is just no session. */
+export async function readSessionToken(
   token: string | undefined,
   now = Date.now(),
-): Promise<boolean> {
-  if (!token) return false;
+): Promise<Session | null> {
+  if (!token) return null;
+
   const separator = token.lastIndexOf(".");
-  if (separator <= 0) return false;
+  if (separator <= 0) return null;
 
   const payload = token.slice(0, separator);
   const signature = token.slice(separator + 1);
 
   let expected: string;
   try {
-    expected = await hmac(signingSecret(), payload);
+    expected = await hmac(await getSessionSecret(), payload);
   } catch {
-    return false;
+    return null;
   }
-  if (!timingSafeEqual(signature, expected)) return false;
+  if (!timingSafeEqual(signature, expected)) return null;
 
-  const expiresAt = Number(payload);
-  if (!Number.isFinite(expiresAt)) return false;
-  return expiresAt * 1000 > now;
+  const [rawUserId, rawExpiry] = payload.split(".");
+  const userId = Number(rawUserId);
+  const expiresAt = Number(rawExpiry);
+  if (!Number.isInteger(userId) || !Number.isFinite(expiresAt)) return null;
+  if (expiresAt * 1000 <= now) return null;
+
+  return { userId, expiresAt };
 }
 
 export const sessionCookieOptions = {
@@ -100,7 +92,6 @@ export const sessionCookieOptions = {
   // `next dev` serves over plain http, where a Secure cookie is dropped.
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
-  // Scoped to the mount path so the cookie never leaks to the rest of the site.
   path: COOKIE_PATH,
   maxAge: SESSION_TTL_SECONDS,
 } as const;
