@@ -157,8 +157,24 @@ input {
 
 .skeleton-stats {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--numo-space-6);
   margin: 0;
+}
+
+.skeleton-who {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--numo-space-3);
+  color: var(--numo-text-muted);
+  font-size: var(--numo-text-sm);
+}
+
+.skeleton-next {
+  margin: var(--numo-space-5) 0 0;
+  padding-top: var(--numo-space-4);
+  border-top: 1px solid var(--numo-border);
+  font-size: var(--numo-text-sm);
 }
 
 .skeleton-stats dt {
