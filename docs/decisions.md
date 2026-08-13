@@ -93,8 +93,18 @@ Co jsem udělal jinak, než jsi psal, a proč:
   vůbec. Cesta se pro daný účet po prvním nastavení natrvalo zavře.
   Cena: mezi deployem a tvým prvním přihlášením by si heslo mohl nastavit
   někdo, kdo zná adresu i e-mail. Proto to udělej hned.
-- **PBKDF2-SHA256, 210 000 iterací** (číslo z OWASP). bcrypt ani argon2 na
-  Workers nejedou — jsou to nativní moduly.
+- **PBKDF2-SHA256, 6 kol po 100 000 iteracích.** bcrypt ani argon2 na
+  Workers nejedou — jsou to nativní moduly. Workers navíc odmítá jedno
+  volání nad 100 000 iterací, zatímco OWASP pro PBKDF2-SHA256 doporučuje
+  600 000. Řetězím proto kola: výstup jednoho je heslem dalšího. Útočník
+  musí projít všechna, takže se práce násobí a 6 × 100 000 dá stejnou
+  odolnost jako 600 000 najednou. Trvá to 0,3 s.
+
+  **Pozor pro příště:** lokální workerd ten limit *nevynucuje*. Prošlo mi to
+  lokálně i v `npm run preview` a spadlo až v produkci. Hlídá to teď test.
+
+  Parametry jsou uložené v hashi (`pbkdf2-sha256$r=6$i=100000$…`), takže
+  zvýšení práce v budoucnu nikoho nevyhodí ven.
 - **Podpisový klíč session** se generuje sám a ukládá do databáze, když
   `NUMO_SESSION_SECRET` není nastavený. Nulová konfigurace.
 - **Odkaz na obnovu hesla** platí hodinu, jde použít jednou, v databázi je
@@ -115,8 +125,8 @@ jen obnova zapomenutého hesla řekne, že odesílání není nastavené.
   uživatele** i posunutá expirace vedou na přihlášení; `/api/*` vrací 401
   místo redirectu.
 - **Co tam není: omezení počtu pokusů o heslo.** Appka bude na veřejné
-  adrese, takže hrubá síla je reálná. PBKDF2 s 210 000 iteracemi ji dělá
-  drahou, ale zámek po N pokusech to nenahrazuje. Když budeš chtít,
+  adrese, takže hrubá síla je reálná. PBKDF2 se 600 000 iteracemi ji dělá
+  drahou (0,3 s na pokus), ale zámek po N pokusech to nenahrazuje. Když budeš chtít,
   dodělám ho — je to malá práce, jen ji nechci pašovat bez domluvy.
 
 ## 6. Verze balíčků
