@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  MAX_ITERATIONS_PER_CALL,
   hashPassword,
   normalizeEmail,
   validatePassword,
@@ -39,6 +40,44 @@ describe("hashování hesla", () => {
     expect(await verifyPassword("cokoliv", { hash: null, salt: null })).toBe(
       false,
     );
+  });
+
+  it("nepřekročí limit Workers na jedno volání PBKDF2", async () => {
+    // Workers odmítne jedno volání nad 100 000 iterací a lokální workerd ten
+    // limit NEVYNUCUJE — spadne to až v produkci. Tenhle test to hlídá.
+    const { hash } = await hashPassword("tajne-heslo-123");
+    const iterations = Number(/\$i=(\d+)\$/.exec(hash)![1]);
+
+    expect(iterations).toBeLessThanOrEqual(MAX_ITERATIONS_PER_CALL);
+  });
+
+  it("dosáhne doporučené práce řetězením kol", async () => {
+    const { hash } = await hashPassword("tajne-heslo-123");
+    const [, rounds, iterations] = /\$r=(\d+)\$i=(\d+)\$/.exec(hash)!;
+
+    // 6 × 100 000 = 600 000, tedy doporučení OWASP pro PBKDF2-SHA256.
+    expect(Number(rounds) * Number(iterations)).toBeGreaterThanOrEqual(600_000);
+  });
+
+  it("nese parametry v hashi, aby šly později zvýšit", async () => {
+    const { hash } = await hashPassword("tajne-heslo-123");
+    expect(hash).toMatch(/^pbkdf2-sha256\$r=\d+\$i=\d+\$/);
+  });
+
+  it("odmítne hash s parametry, které by platforma nepřijala", async () => {
+    const record = await hashPassword("tajne-heslo-123");
+    const tampered = record.hash.replace(/\$i=\d+\$/, "$i=210000$");
+
+    expect(await verifyPassword("tajne-heslo-123", { ...record, hash: tampered })).toBe(
+      false,
+    );
+  });
+
+  it("odmítne hash v neznámém formátu", async () => {
+    const record = await hashPassword("tajne-heslo-123");
+    expect(
+      await verifyPassword("tajne-heslo-123", { ...record, hash: "holy-digest" }),
+    ).toBe(false);
   });
 
   it("nespadne na poškozené soli v databázi", async () => {
