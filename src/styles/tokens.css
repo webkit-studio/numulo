@@ -53,4 +53,20 @@
   /* effects */
   --numo-shadow-card: 0 1px 2px rgb(16 24 40 / 6%), 0 1px 3px rgb(16 24 40 / 4%);
   --numo-focus-ring: 0 0 0 3px rgb(31 111 235 / 35%);
+
+  /*
+   * Data-viz slots. Sequential encoding is one hue light→dark — magnitude is
+   * ordered, so the colour must be too. Never a rainbow ramp.
+   */
+  --viz-empty: #ececeb;
+  --viz-seq-100: #cde2fb;
+  --viz-seq-200: #9ec5f4;
+  --viz-seq-300: #6da7ec;
+  --viz-seq-450: #2a78d6;
+  --viz-seq-600: #184f95;
+
+  /* Status is reserved — never reused as a series colour. */
+  --viz-good: #0ca30c;
+  --viz-warning: #fab219;
+  --viz-critical: #d03b3b;
 }
