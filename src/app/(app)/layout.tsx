@@ -16,6 +16,7 @@ const GROUPS = [
     items: [
       { href: "/plan", text: "Plán" },
       { href: "/pravidelne", text: "Pravidelné" },
+      { href: "/zapsat", text: "Zapsat výdaj" },
     ],
   },
   {
@@ -77,6 +78,13 @@ export default async function AppLayout({
       </aside>
 
       <main className="app-main">{children}</main>
+
+      {/* Zapisování hotovosti je jediná věc, co se dělá vestoje v obchodě —
+          proto má na mobilu vlastní tlačítko, ne položku v menu. */}
+      <Link href="/zapsat" className="app-fab" aria-label="Zapsat výdaj">
+        <span aria-hidden="true">+</span>
+        <span className="app-fab-text">Zapsat výdaj</span>
+      </Link>
 
       <nav className="app-tabbar" aria-label="Hlavní navigace">
         {TABS.map((tab) => (

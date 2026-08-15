@@ -4,6 +4,7 @@ import { getDb } from "@/db/getDb";
 import { transactions } from "@/db/schema";
 import { ACCOUNT_ID } from "@/lib/data/queries";
 import { withJsonErrors } from "@/lib/http";
+import { czkToHalere } from "@/lib/money";
 import { learnRule } from "@/lib/rules/engine";
 
 export const dynamic = "force-dynamic";
@@ -106,4 +107,72 @@ export const PATCH = withJsonErrors(async (request: NextRequest) => {
     learned,
     learnedFrom,
   });
+});
+
+/**
+ * Records a transaction typed in by hand — the cash payments no statement will
+ * ever bring in.
+ *
+ * The fingerprint of a manual row is deliberately unique per entry rather than
+ * derived from its contents: two coffees, same price, same day, are two
+ * payments, and a content hash would swallow the second one exactly the way
+ * the import's occurrence index exists to prevent.
+ */
+export const POST = withJsonErrors(async (request: NextRequest) => {
+  const body = (await request.json().catch(() => null)) as {
+    amount?: unknown;
+    merchant?: unknown;
+    date?: unknown;
+    categoryId?: unknown;
+    ownerId?: unknown;
+    direction?: unknown;
+    note?: unknown;
+  } | null;
+
+  const raw =
+    typeof body?.amount === "number"
+      ? body.amount
+      : Number(String(body?.amount ?? "").replace(",", "."));
+
+  if (!Number.isFinite(raw) || raw <= 0) {
+    return NextResponse.json(
+      { error: "Částka musí být kladné číslo." },
+      { status: 400 },
+    );
+  }
+
+  const merchant = String(body?.merchant ?? "").trim();
+  if (merchant === "") {
+    return NextResponse.json({ error: "Napiš, za co to bylo." }, { status: 400 });
+  }
+
+  const date = String(body?.date ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return NextResponse.json({ error: "Datum musí být RRRR-MM-DD." }, { status: 400 });
+  }
+
+  const income = body?.direction === "income";
+  const amount = czkToHalere(income ? raw : -raw);
+
+  const [row] = await getDb()
+    .insert(transactions)
+    .values({
+      accountId: ACCOUNT_ID,
+      fingerprint: `manual:${crypto.randomUUID()}`,
+      date,
+      amount,
+      currency: "CZK",
+      merchant,
+      description:
+        typeof body?.note === "string" && body.note.trim() !== ""
+          ? body.note.trim()
+          : merchant,
+      categoryId: Number.isInteger(body?.categoryId) ? (body?.categoryId as number) : null,
+      ownerId: Number.isInteger(body?.ownerId) ? (body?.ownerId as number) : null,
+      source: "manual",
+      status: "confirmed",
+    })
+    .returning();
+
+  return NextResponse.json({ ok: true, id: row.id });
 });

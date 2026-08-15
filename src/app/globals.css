@@ -1258,3 +1258,31 @@ input {
 }
 
 .crud-amount.is-negative { color: var(--viz-critical); }
+
+/* -------------------------------------------------------------------- FAB */
+
+.app-fab {
+  position: fixed;
+  right: var(--numo-space-4);
+  bottom: calc(56px + var(--numo-space-4));
+  z-index: 20;
+  display: none;
+  align-items: center;
+  gap: var(--numo-space-2);
+  padding: var(--numo-space-3) var(--numo-space-4);
+  border-radius: 999px;
+  background: var(--numo-accent);
+  color: var(--numo-accent-contrast);
+  font-size: var(--numo-text-sm);
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: var(--numo-shadow-card);
+}
+
+.app-fab span[aria-hidden="true"] { font-size: var(--numo-text-lg); line-height: 1; }
+
+@media (max-width: 900px) {
+  .app-fab { display: inline-flex; }
+}
+
+.big-amount { font-size: var(--numo-text-xl); }
