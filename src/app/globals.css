@@ -450,6 +450,8 @@ input {
 
 /* Alert state carries a border and the word, never colour alone. */
 .tile.is-alert { border-color: var(--viz-critical); }
+.tile.is-good { border-color: var(--numo-positive); }
+.tile.is-good .tile-value { color: var(--numo-positive); }
 .tile.is-alert .tile-value { color: var(--viz-critical); }
 
 .hero-value {
@@ -932,3 +934,151 @@ input {
 }
 
 .sort-settled { color: var(--numo-text-muted); font-size: var(--numo-text-sm); }
+
+/* ------------------------------------------------------------------- crud */
+/* Every list in numo is editable, so the add/edit/delete affordances are
+   styled once and look the same on Plán, Pravidelné and Dluhy. */
+
+.crud { display: grid; gap: var(--numo-space-3); }
+.crud-list { list-style: none; margin: 0; padding: 0; display: grid; }
+
+.crud-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--numo-space-3);
+  padding: var(--numo-space-3) 0;
+  border-bottom: 1px solid var(--numo-border);
+}
+
+.crud-row:last-child { border-bottom: none; }
+.crud-row.is-busy { opacity: 0.5; }
+
+/* Rows that belong to another screen — shown for context, edited elsewhere. */
+.crud-row.is-muted { opacity: 0.55; }
+
+.crud-row.is-editing {
+  display: block;
+  padding: var(--numo-space-3) 0;
+}
+
+.crud-main { display: grid; gap: 3px; min-width: 0; }
+
+.crud-title {
+  display: flex;
+  align-items: center;
+  gap: var(--numo-space-2);
+  font-size: var(--numo-text-sm);
+  font-weight: 500;
+}
+
+.crud-meta {
+  color: var(--numo-text-muted);
+  font-size: var(--numo-text-xs);
+}
+
+.crud-amount { font-size: var(--numo-text-sm); white-space: nowrap; }
+
+.crud-actions { display: flex; gap: var(--numo-space-1); }
+.crud-actions-empty { width: 0; }
+
+.crud-actions button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--numo-radius-md);
+  background: none;
+  color: var(--numo-text-muted);
+  cursor: pointer;
+  font-size: var(--numo-text-sm);
+  line-height: 1;
+}
+
+.crud-actions button:hover {
+  border-color: var(--numo-border);
+  color: var(--numo-text);
+}
+
+.crud-actions button.is-danger:hover {
+  border-color: var(--viz-critical);
+  color: var(--viz-critical);
+}
+
+.crud-add {
+  justify-self: start;
+  padding: var(--numo-space-2) var(--numo-space-3);
+  border: 1px dashed var(--numo-border);
+  border-radius: var(--numo-radius-md);
+  background: none;
+  color: var(--numo-text-muted);
+  cursor: pointer;
+  font-size: var(--numo-text-sm);
+}
+
+.crud-add:hover { border-color: var(--numo-accent); color: var(--numo-accent); }
+
+.crud-form, .stack-form { display: grid; gap: var(--numo-space-3); }
+
+.crud-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--numo-space-3);
+}
+
+.crud-field { display: grid; gap: 4px; grid-column: 1 / -1; }
+.crud-field.is-half { grid-column: auto; }
+
+.crud-field.is-check {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--numo-space-2);
+}
+
+.crud-field.is-check input { justify-self: start; order: -1; }
+
+.crud-label {
+  color: var(--numo-text-muted);
+  font-size: var(--numo-text-xs);
+}
+
+.crud-hint { color: var(--numo-text-muted); font-size: var(--numo-text-xs); }
+
+.crud-field input, .crud-field select, .stack-form input, .stack-form select {
+  padding: var(--numo-space-2) var(--numo-space-3);
+  border: 1px solid var(--numo-border);
+  border-radius: var(--numo-radius-md);
+  background: var(--numo-surface);
+  color: var(--numo-text);
+  font: inherit;
+  font-size: var(--numo-text-sm);
+  width: 100%;
+}
+
+.crud-field input[type="checkbox"] { width: auto; }
+
+.crud-form-actions { display: flex; gap: var(--numo-space-2); }
+
+.crud-form-actions button {
+  padding: var(--numo-space-2) var(--numo-space-4);
+  border: 1px solid var(--numo-border);
+  border-radius: var(--numo-radius-md);
+  background: var(--numo-surface);
+  color: var(--numo-text);
+  cursor: pointer;
+  font-size: var(--numo-text-sm);
+}
+
+.crud-form-actions button.is-primary {
+  border-color: var(--numo-accent);
+  background: var(--numo-accent);
+  color: var(--numo-accent-contrast);
+}
+
+.crud-form-actions button:disabled { opacity: 0.55; cursor: default; }
+
+@media (max-width: 640px) {
+  .crud-fields { grid-template-columns: minmax(0, 1fr); }
+  .crud-field.is-half { grid-column: 1 / -1; }
+}

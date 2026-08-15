@@ -20,6 +20,7 @@
   --numo-text: #17181a;
   --numo-text-muted: #6b6f76;
   --numo-accent: #1f6feb;
+  --numo-accent-contrast: #ffffff;
   --numo-positive: #17795e;
   --numo-warning: #b45309;
   --numo-negative: #b42318;
@@ -44,6 +45,7 @@
     Arial, sans-serif;
   --numo-font-numeric:
     ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --numo-text-xs: 12px;
   --numo-text-sm: 13px;
   --numo-text-base: 15px;
   --numo-text-lg: 20px;
