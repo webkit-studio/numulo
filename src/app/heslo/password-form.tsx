@@ -9,10 +9,15 @@ import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
 
 type Stage = "ask-email" | "set-password" | "emailed";
 
-export function PasswordForm({ token }: { token: string | null }) {
+export function PasswordForm({ token: initialToken }: { token: string | null }) {
   const router = useRouter();
+  // Held in state, not read straight from the prop: a dead link has to be
+  // discardable so the screen can fall back to asking for an e-mail.
+  const [token, setToken] = useState(initialToken);
   // A link from the e-mail lands straight on the new-password step.
-  const [stage, setStage] = useState<Stage>(token ? "set-password" : "ask-email");
+  const [stage, setStage] = useState<Stage>(
+    initialToken ? "set-password" : "ask-email",
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +118,27 @@ export function PasswordForm({ token }: { token: string | null }) {
         <button type="submit" disabled={pending || password.length === 0}>
           {pending ? "Ukládám…" : "Nastavit heslo a přihlásit"}
         </button>
+
+        {/* A dead link lands here with a button that will fail identically
+            every time. Without these two exits the only way out is editing
+            the URL by hand. */}
+        {token ? (
+          <button
+            type="button"
+            className="login-secondary"
+            onClick={() => {
+              setToken(null);
+              setError(null);
+              setStage("ask-email");
+            }}
+          >
+            Odkaz nefunguje — začít znovu
+          </button>
+        ) : null}
+
+        <Link href="/login" className="login-secondary">
+          Zpátky na přihlášení
+        </Link>
       </form>
     );
   }

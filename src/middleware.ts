@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE, readSessionToken } from "@/lib/auth/session";
+import {
+  SESSION_COOKIE,
+  readSessionToken,
+  sessionEpochValid,
+} from "@/lib/auth/session";
 
 /**
  * Reachable without a session. Paths are basePath-relative — Next strips the
@@ -22,13 +26,22 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (PUBLIC_PATHS.has(pathname)) return NextResponse.next();
-  if (await readSessionToken(request.cookies.get(SESSION_COOKIE)?.value)) {
+
+  // Signature and expiry are pure crypto; the epoch needs a row. Both are
+  // checked here rather than only in the pages, so a revoked cookie cannot
+  // reach an API route that never bothers to look the user up.
+  const session = await readSessionToken(
+    request.cookies.get(SESSION_COOKIE)?.value,
+  );
+  if (session && (await sessionEpochValid(session))) {
     return NextResponse.next();
   }
 
   // API calls get a 401 rather than an HTML redirect they can't follow.
   if (pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const denied = NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (session) denied.cookies.delete(SESSION_COOKIE);
+    return denied;
   }
 
   // Clone nextUrl rather than building a fresh URL: NextURL carries the
@@ -40,7 +53,11 @@ export async function middleware(request: NextRequest) {
   const target = pathname + request.nextUrl.search;
   if (target !== "/") loginUrl.searchParams.set("next", target);
 
-  return NextResponse.redirect(loginUrl);
+  const redirect = NextResponse.redirect(loginUrl);
+  // A cookie that verified but is no longer current would otherwise keep
+  // bouncing the browser back here on every navigation.
+  if (session) redirect.cookies.delete(SESSION_COOKIE);
+  return redirect;
 }
 
 export const config = {

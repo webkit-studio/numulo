@@ -183,3 +183,31 @@ Binding `IMPORTS` (bucket `numo-imports`) drží syrové CSV soubory tak, jak
 přišly. Každé číslo v numo se z nich dá znovu spočítat. Když binding chybí,
 import projde a jen se nearchivuje — v historii importů je pak u záznamu
 „bez archivu".
+
+## Zapomenuté heslo bez nastavených e-mailů
+
+Tohle je nejdůležitější věc v celém dokumentu, protože právě tímhle se dá
+zaseknout: **numo neumí poslat odkaz na obnovu hesla, dokud nemá
+`RESEND_API_KEY` i `NUMO_MAIL_FROM`.** Bez nich se člověk, který heslo
+zapomněl, ven nedostane sám.
+
+Cesta zpátky vede zevnitř, ne přes mail:
+
+1. Přihlásí se kdokoli z domácnosti, kdo heslo zná.
+2. **Nastavení → Heslo a přístup → Vyrobit odkaz** u toho druhého.
+3. Odkaz se ukáže na obrazovce. Platí hodinu, jde použít jednou. Předej ho jak
+   chceš — přečti nahlas, pošli přes messenger, podej telefon.
+
+Proto je „Vyrobit odkaz" schválně napsané tak, aby fungovalo bez mailu: dva
+lidi v jednom bytě nemají důvod čekat na cizí doručovací službu.
+
+**Když heslo nezná nikdo,** je to jiná situace a řeší se ručně v databázi —
+napiš si o pomoc, nestaví se na to žádná zkratka v aplikaci. Trvale otevřená
+zadní vrátka jsou horší problém než zaseknutí, protože je najde i někdo jiný.
+
+### Odesílatel mailů
+
+`NUMO_MAIL_FROM` musí být adresa na doméně, kterou máš v Resendu ověřenou
+(Domains → Add domain → zapsat DNS záznamy). Resendí pískovištní adresa
+`onboarding@resend.dev` doručí jen majiteli účtu, takže se jako výchozí hodnota
+schválně nepoužívá — vypadala by nastaveně a přitom by odkaz nikam nedorazil.

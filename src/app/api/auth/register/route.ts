@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getDb } from "@/db/getDb";
-import { accountMembers, users } from "@/db/schema";
-import { hashPassword, normalizeEmail } from "@/lib/auth/password";
+import { hashPassword, normalizeEmail, validatePassword } from "@/lib/auth/password";
 import {
   SESSION_COOKIE,
   createSessionToken,
@@ -9,27 +8,34 @@ import {
 } from "@/lib/auth/session";
 import { findUserByEmail } from "@/lib/auth/users";
 import { turnstileConfigured, verifyTurnstile } from "@/lib/auth/turnstile";
-import { ACCOUNT_ID } from "@/lib/data/queries";
 import { withJsonErrors } from "@/lib/http";
+import { users } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-const MIN_PASSWORD = 10;
-
 /**
- * Public sign-up, behind a Turnstile check.
+ * Sign-up, behind a Turnstile check and an allowlist.
  *
- * Registration is closed unless the bot check is configured. An open form with
- * a silently disabled check is worse than no form: it looks protected, and
- * nobody would find out otherwise until the table is full of junk accounts.
+ * ── Why this is not open registration ──────────────────────────────────────
+ * Every query in numo is scoped by the hard-coded ACCOUNT_ID = 1 and nothing
+ * consults account_members. So *any* valid session is full read/write access to
+ * this household's bank history. An open sign-up form is therefore not a
+ * sign-up form — it is a public download of the family's finances, one bot
+ * check away.
+ *
+ * Until accounts are genuinely separated, a person may only claim an e-mail
+ * that is already in `users` and has never had a password. That is the
+ * behaviour migration 0001 documented from the start; the first implementation
+ * of this route drifted from it.
+ *
+ * This route therefore never INSERTs a user. It only ever fills in the password
+ * of a row that was seeded by a migration.
  */
 export const POST = withJsonErrors(async (request: NextRequest) => {
   if (!turnstileConfigured()) {
     return NextResponse.json(
-      {
-        error:
-          "Registrace je zavřená — chybí nastavení ochrany proti botům.",
-      },
+      { error: "Registrace je zavřená — chybí nastavení ochrany proti botům." },
       { status: 503 },
     );
   }
@@ -49,56 +55,62 @@ export const POST = withJsonErrors(async (request: NextRequest) => {
     return NextResponse.json({ error: check.reason }, { status: 400 });
   }
 
-  const name = String(body?.name ?? "").trim();
   const email = normalizeEmail(String(body?.email ?? ""));
   const password = String(body?.password ?? "");
+  const name = String(body?.name ?? "").trim();
 
-  if (name === "") {
-    return NextResponse.json({ error: "Napiš, jak ti máme říkat." }, { status: 400 });
-  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: "To nevypadá jako e-mail." }, { status: 400 });
   }
-  if (password.length < MIN_PASSWORD) {
-    return NextResponse.json(
-      { error: `Heslo musí mít aspoň ${MIN_PASSWORD} znaků.` },
-      { status: 400 },
-    );
-  }
+
+  const complaint = validatePassword(password);
+  if (complaint) return NextResponse.json({ error: complaint }, { status: 400 });
 
   const db = getDb();
+  const user = await findUserByEmail(db, email);
 
-  if (await findUserByEmail(db, email)) {
-    // Says plainly that the address is taken. Hiding it would only push the
-    // person into "forgot password", which reveals the same thing anyway.
+  // Deliberately the same answer for "not on the allowlist" and "already has a
+  // password". Distinguishing them would turn this form into a directory of
+  // who lives in this household and which of them has logged in yet.
+  if (!user || user.passwordSetAt) {
     return NextResponse.json(
-      { error: "Na tenhle e-mail už účet je. Zkus se přihlásit." },
-      { status: 409 },
+      {
+        error:
+          "Pro tenhle e-mail účet založit nejde. numo je rodinná appka — " +
+          "přístup zakládá někdo, kdo už uvnitř je.",
+      },
+      { status: 403 },
     );
   }
 
   const { hash, salt } = await hashPassword(password);
 
-  const [user] = await db
-    .insert(users)
-    .values({
-      name,
-      email,
+  const [updated] = await db
+    .update(users)
+    .set({
       passwordHash: hash,
       passwordSalt: salt,
       passwordSetAt: new Date().toISOString(),
+      sessionEpoch: sql`${users.sessionEpoch} + 1`,
+      // The seeded name stands unless the person offered a better one.
+      ...(name === "" ? {} : { name }),
     })
-    .returning({ id: users.id, name: users.name });
+    .where(eq(users.id, user.id))
+    .returning({
+      id: users.id,
+      name: users.name,
+      sessionEpoch: users.sessionEpoch,
+    });
 
-  await db
-    .insert(accountMembers)
-    .values({ accountId: ACCOUNT_ID, userId: user.id, role: "member" })
-    .onConflictDoNothing();
+  console.log(`[numo] heslo nastaveno registrací pro uživatele ${updated.id}`);
 
-  const response = NextResponse.json({ ok: true, user });
+  const response = NextResponse.json({
+    ok: true,
+    user: { id: updated.id, name: updated.name },
+  });
   response.cookies.set(
     SESSION_COOKIE,
-    await createSessionToken(user.id),
+    await createSessionToken(updated.id, updated.sessionEpoch),
     sessionCookieOptions,
   );
   return response;

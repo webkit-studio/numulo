@@ -45,15 +45,25 @@ export function timingSafeEqual(a: string, b: string): boolean {
 export interface Session {
   userId: number;
   expiresAt: number;
+  /** The user's session_epoch when this cookie was minted. */
+  epoch: number;
 }
 
-/** `{userId}.{expiresAtSeconds}.{signature}` */
+/**
+ * `{userId}.{epoch}.{expiresAtSeconds}.{signature}`
+ *
+ * The epoch is what makes a session revocable. A signed cookie is otherwise
+ * valid for its full 30 days no matter what happens to the account, so
+ * changing a password would leave every stolen cookie working — which is the
+ * one thing a password change is supposed to stop.
+ */
 export async function createSessionToken(
   userId: number,
+  epoch: number,
   now = Date.now(),
 ): Promise<string> {
   const expiresAt = Math.floor(now / 1000) + SESSION_TTL_SECONDS;
-  const payload = `${userId}.${expiresAt}`;
+  const payload = `${userId}.${epoch}.${expiresAt}`;
   return `${payload}.${await hmac(await getSessionSecret(), payload)}`;
 }
 
@@ -78,13 +88,39 @@ export async function readSessionToken(
   }
   if (!timingSafeEqual(signature, expected)) return null;
 
-  const [rawUserId, rawExpiry] = payload.split(".");
+  const [rawUserId, rawEpoch, rawExpiry] = payload.split(".");
   const userId = Number(rawUserId);
+  const epoch = Number(rawEpoch);
   const expiresAt = Number(rawExpiry);
-  if (!Number.isInteger(userId) || !Number.isFinite(expiresAt)) return null;
-  if (expiresAt * 1000 <= now) return null;
 
-  return { userId, expiresAt };
+  // Cookies minted before the epoch existed have two payload segments and land
+  // here with expiresAt undefined. They are rejected rather than upgraded: the
+  // whole point of the epoch is that a session predating it cannot be trusted.
+  if (!Number.isInteger(userId) || !Number.isInteger(epoch)) return null;
+  if (!Number.isFinite(expiresAt) || expiresAt * 1000 <= now) return null;
+
+  return { userId, expiresAt, epoch };
+}
+
+/**
+ * Confirms the cookie's epoch still matches the account's.
+ *
+ * Separate from `readSessionToken` because that one is pure crypto and runs in
+ * tests without a database; this one needs D1 and is called wherever a request
+ * is about to be trusted.
+ */
+export async function sessionEpochValid(session: Session): Promise<boolean> {
+  const { env } = await import("@opennextjs/cloudflare").then((m) =>
+    m.getCloudflareContext(),
+  );
+  const row = await env.DB.prepare(
+    "SELECT session_epoch FROM users WHERE id = ?",
+  )
+    .bind(session.userId)
+    .first<{ session_epoch: number }>();
+
+  // No row means the account is gone; that is not a valid session either.
+  return row ? Number(row.session_epoch) === session.epoch : false;
 }
 
 export const sessionCookieOptions = {

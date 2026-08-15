@@ -31,6 +31,11 @@ export const users = sqliteTable(
     passwordHash: text("password_hash"),
     passwordSalt: text("password_salt"),
     passwordSetAt: text("password_set_at"),
+    /**
+     * Bumped whenever every existing session for this person must stop working
+     * — a password change, or a deliberate "log me out everywhere".
+     */
+    sessionEpoch: integer("session_epoch").notNull().default(1),
     createdAt: text("created_at").notNull().default(now),
   },
   (t) => [uniqueIndex("users_email").on(t.email)],

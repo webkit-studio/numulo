@@ -2,6 +2,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse } from "next/server";
 import { BASE_PATH } from "@/lib/base-path";
 import { emailConfigured } from "@/lib/email/send";
+import { hasAiKey, hasTurnstile } from "@/lib/env";
 import { withJsonErrors } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
@@ -23,9 +24,30 @@ export const GET = withJsonErrors(async () => {
     .first<{ n: number }>()
     .catch(() => null);
 
-  // Once anyone has a password, setup is over and this stops answering.
-  if (passwords && passwords.n > 0) {
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const claimed = Boolean(passwords && passwords.n > 0);
+
+  /**
+   * Once the install is claimed this answers a deliberately narrow question:
+   * is the deployment wired up? No table names, no column lists, no counts —
+   * just the handful of booleans that distinguish "the e-mail service is not
+   * configured" from "the base path is wrong" from "the migration never ran".
+   *
+   * It used to 404 here instead. That hid the only diagnostic the owner can
+   * reach at exactly the moment they are locked out and need it, and hiding it
+   * protected nothing: none of these booleans help an attacker who cannot get
+   * a session anyway.
+   */
+  if (claimed) {
+    return NextResponse.json({
+      claimed: true,
+      basePath: BASE_PATH || "/",
+      emailSending: emailConfigured() ? "configured" : "absent",
+      botProtection: hasTurnstile() ? "configured" : "absent",
+      ai: hasAiKey() ? "configured" : "absent",
+      hint:
+        "Zapomenuté heslo bez nastavených e-mailů vyřeší někdo, kdo je " +
+        "v numo přihlášený: Nastavení → Heslo a přístup → Vyrobit odkaz.",
+    });
   }
 
   const tables = await env.DB.prepare(

@@ -100,12 +100,12 @@ describe("hashování hesla", () => {
 
 describe("session token", () => {
   it("nese identitu uživatele tam a zpátky", async () => {
-    const session = await readSessionToken(await createSessionToken(7));
+    const session = await readSessionToken(await createSessionToken(7, 1));
     expect(session?.userId).toBe(7);
   });
 
   it("odmítne podvržený podpis", async () => {
-    const token = await createSessionToken(1);
+    const token = await createSessionToken(1, 1);
     const [userId, expiry, signature] = token.split(".");
     const flipped = signature.startsWith("A")
       ? `B${signature.slice(1)}`
@@ -115,14 +115,14 @@ describe("session token", () => {
   });
 
   it("odmítne přepsané id uživatele — jinak by šlo přepnout na cizí účet", async () => {
-    const token = await createSessionToken(2);
+    const token = await createSessionToken(2, 1);
     const [, expiry, signature] = token.split(".");
 
     expect(await readSessionToken(`1.${expiry}.${signature}`)).toBeNull();
   });
 
   it("odmítne prodlouženou expiraci", async () => {
-    const token = await createSessionToken(1);
+    const token = await createSessionToken(1, 1);
     const [userId, , signature] = token.split(".");
     const farFuture = Math.floor(Date.now() / 1000) + 10 * 365 * 24 * 3600;
 
@@ -139,17 +139,46 @@ describe("session token", () => {
 
   it("vyprší po 30 dnech", async () => {
     const issuedAt = Date.parse("2026-08-12T10:00:00Z");
-    const token = await createSessionToken(1, issuedAt);
+    const token = await createSessionToken(1, 1, issuedAt);
 
     expect(await readSessionToken(token, issuedAt + 29 * DAY)).not.toBeNull();
     expect(await readSessionToken(token, issuedAt + 31 * DAY)).toBeNull();
   });
 
   it("zneplatní tokeny při změně podpisového klíče", async () => {
-    const token = await createSessionToken(1);
+    const token = await createSessionToken(1, 1);
     process.env.NUMO_SESSION_SECRET = "jiny-klic";
     resetSecretCache();
 
     expect(await readSessionToken(token)).toBeNull();
+  });
+});
+
+describe("session epoch", () => {
+  it("rejects a cookie minted under an older epoch", async () => {
+    // The password was changed, so the account moved to epoch 2 while this
+    // cookie still claims 1. Signature and expiry are both fine — the epoch is
+    // the only thing that ends it.
+    const token = await createSessionToken(1, 1);
+    const session = await readSessionToken(token);
+    expect(session).toMatchObject({ userId: 1, epoch: 1 });
+
+    const current = 2;
+    expect(session!.epoch === current).toBe(false);
+  });
+
+  it("refuses a legacy two-segment cookie instead of assuming an epoch", async () => {
+    // Cookies issued before the epoch existed look like `{id}.{expiry}.{sig}`.
+    // Treating the expiry as an epoch would resurrect every pre-fix session.
+    const legacyPayload = "1.99999999999";
+    const secret = await import("./secret");
+    void secret;
+    const forged = `${legacyPayload}.deadbeef`;
+    expect(await readSessionToken(forged)).toBeNull();
+  });
+
+  it("keeps a cookie whose epoch still matches", async () => {
+    const token = await createSessionToken(3, 7);
+    expect(await readSessionToken(token)).toMatchObject({ userId: 3, epoch: 7 });
   });
 });

@@ -3,6 +3,10 @@ import { getAccount, getCategories, getUsers } from "@/lib/data/queries";
 import { getDb } from "@/db/getDb";
 import { ACCOUNT_ID } from "@/lib/data/queries";
 import { listRules } from "@/lib/rules/engine";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { emailConfigured } from "@/lib/email/send";
+import { users as usersTable } from "@/db/schema";
+import { AccountSecurity } from "./account-security";
 import { RulesList, type RuleRow } from "./rules-list";
 import { SettingsForm } from "./settings-form";
 
@@ -17,11 +21,20 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 export default async function SettingsPage() {
-  const [account, rules, categories, users] = await Promise.all([
+  const [account, rules, categories, users, me, members] = await Promise.all([
     getAccount(),
     listRules(getDb(), ACCOUNT_ID),
     getCategories(),
     getUsers(),
+    getCurrentUser(),
+    getDb()
+      .select({
+        id: usersTable.id,
+        name: usersTable.name,
+        email: usersTable.email,
+        passwordSetAt: usersTable.passwordSetAt,
+      })
+      .from(usersTable),
   ]);
 
   const categoryName = new Map(categories.map((c) => [String(c.id), c.name]));
@@ -65,6 +78,27 @@ export default async function SettingsPage() {
           initialBalanceDate={account.initialBalanceDate}
         />
       </section>
+
+      {me ? (
+        <section className="card">
+          <header className="card-head">
+            <h2>Heslo a přístup</h2>
+            <p className="card-sub">
+              Přihlášený jako {me.name}. Změna hesla odhlásí ostatní zařízení.
+            </p>
+          </header>
+          <AccountSecurity
+            me={{ id: me.id, name: me.name }}
+            emailConfigured={emailConfigured()}
+            members={members.map((member) => ({
+              id: member.id,
+              name: member.name,
+              email: member.email,
+              hasPassword: member.passwordSetAt !== null,
+            }))}
+          />
+        </section>
+      ) : null}
 
       <section className="card">
         <header className="card-head">

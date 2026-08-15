@@ -1387,3 +1387,32 @@ input {
 .import-totals th:first-child, .import-totals td:first-child { text-align: left; }
 
 .turnstile { min-height: 65px; }
+
+/* A recovery link is read aloud or copied, never clicked here — clicking would
+   burn the single-use token on whoever is already holding the phone. */
+.recovery-link {
+  display: grid;
+  gap: var(--numo-space-3);
+  margin-top: var(--numo-space-4);
+  padding: var(--numo-space-4);
+  border: 1px solid var(--numo-accent);
+  border-radius: var(--numo-radius-md);
+  background: var(--viz-seq-100);
+}
+
+.recovery-link p { margin: 0; font-size: var(--numo-text-sm); }
+
+.recovery-link code {
+  display: block;
+  overflow-wrap: anywhere;
+  padding: var(--numo-space-2);
+  border-radius: var(--numo-radius-sm);
+  background: var(--numo-surface);
+  font-family: var(--numo-font-numeric);
+  font-size: var(--numo-text-xs);
+  user-select: all;
+}
+
+/* The recovery button carries a full label, so it must not be squeezed into
+   the icon-sized actions column the other rows use. */
+.crud-actions .crud-add { white-space: nowrap; }

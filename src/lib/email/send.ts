@@ -12,8 +12,14 @@ export interface SendResult {
   reason?: string;
 }
 
+/**
+ * Both halves are required. Resend's sandbox sender only delivers to the
+ * account owner's own address, so defaulting to it produced a 403 at the worst
+ * possible moment — someone waiting on a reset link that was never going to
+ * arrive. Better to report "not configured" than to half-work.
+ */
 export function emailConfigured(): boolean {
-  return Boolean(getEnvVar("RESEND_API_KEY"));
+  return Boolean(getEnvVar("RESEND_API_KEY") && getEnvVar("NUMO_MAIL_FROM"));
 }
 
 export async function sendEmail(options: {
@@ -24,7 +30,14 @@ export async function sendEmail(options: {
   const apiKey = getEnvVar("RESEND_API_KEY");
   if (!apiKey) return { sent: false, reason: "RESEND_API_KEY není nastavený" };
 
-  const from = getEnvVar("NUMO_MAIL_FROM") ?? "numo <onboarding@resend.dev>";
+  const from = getEnvVar("NUMO_MAIL_FROM");
+  if (!from) {
+    return {
+      sent: false,
+      reason:
+        "NUMO_MAIL_FROM není nastavený — Resend potřebuje odesílatele z ověřené domény",
+    };
+  }
 
   try {
     const response = await fetch("https://api.resend.com/emails", {
@@ -42,7 +55,13 @@ export async function sendEmail(options: {
     });
 
     if (!response.ok) {
-      return { sent: false, reason: `Resend odpověděl ${response.status}` };
+      // Resend explains refusals in the body — an unverified domain, a sender
+      // that is not yours. Dropping it leaves a bare status code to debug from.
+      const detail = await response.text().catch(() => "");
+      return {
+        sent: false,
+        reason: `Resend odpověděl ${response.status}${detail ? `: ${detail.slice(0, 300)}` : ""}`,
+      };
     }
     return { sent: true };
   } catch (error) {

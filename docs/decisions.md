@@ -247,3 +247,54 @@ druhou spolkl přesně tak, jak tomu u importu brání pořadový index.
 - **Volání Claude API nebylo ověřeno naživo** — v tomhle prostředí není
   `ANTHROPIC_API_KEY`. Ověřeno je, že bez klíče appka běží a routy vrací 503,
   a unit testy pokrývají vrstvu, která model hlídá.
+
+## Bezpečnostní oprava po auditu autentizace
+
+Audit celé auth vrstvy našel 39 nálezů, z toho 5 blokujících. Tři z nich byly
+skutečné díry, ne teorie:
+
+### Kdokoli mohl převzít účet, který ještě neměl heslo
+
+`/api/auth/set-password` brala bez tokenu identitu **výhradně z e-mailu
+poslaného klientem**. Jediná podmínka byla, že ten účet ještě heslo nemá — a
+adresy jsou napsané v migraci. Jeden HTTP požadavek stačil na třicetidenní
+session a plný přístup k historii účtu. Podmínka se změnila z „tenhle řádek
+nemá heslo" na „**nikdo v téhle instalaci** ještě heslo nemá", což je vlastnost
+celé instalace, ne jednoho řádku. Per-účet varianta zůstávala pravdivá
+donekonečna u každého, kdo se ještě nepřihlásil.
+
+### Registrace pouštěla cizí adresy dovnitř domácnosti
+
+Route zakládala účet libovolnému e-mailu a vložila ho do `account_members` pro
+`ACCOUNT_ID = 1`. Jenže členství nikdo nečte — všechny dotazy jsou scopované tou
+konstantou, takže jakákoli platná session = plný přístup k rodinným financím.
+Registrace tedy nebyla registrace, ale veřejné stažení výpisů za jedno projití
+captchy. Nově smí člověk převzít jen adresu, která už v `users` je a heslo nikdy
+neměla. Route nikdy nezakládá řádek, jen doplní heslo k seedovanému. Odmítnutí
+zní stejně pro „není na seznamu" i „už heslo má", aby formulář nešel použít jako
+seznam obyvatel.
+
+### Změna hesla neodhlásila ostatní zařízení
+
+Podepsaná cookie platila celých 30 dní bez ohledu na cokoli. Uživatelé mají nový
+sloupec `session_epoch`, který je součástí tokenu a při změně hesla se zvýší —
+takže jediná akce, kterou člověk dělá *proto*, že heslo možná uniklo, konečně
+opravdu ukončí cizí přístup. Middleware epochu ověřuje a neplatnou cookie rovnou
+maže, jinak by prohlížeč cyklil na přihlašovací stránce.
+
+### Proč tu není „break-glass" obnova přes proměnnou prostředí
+
+Zvažovalo se to a bylo to zamítnuto. Mechanismus, kterým kdokoli s přístupem k
+nastavení deploymentu resetuje libovolné heslo, je trvale otevřená cesta okolo
+přihlášení; audit na něj našel dvě fatální námitky a jednu vážnou. Místo toho
+umí obnovu **přihlášený člen domácnosti** (Nastavení → Heslo a přístup →
+Vyrobit odkaz). Autorita je aktivní session, ne tvrzení o vlastnictví adresy —
+a to je celý rozdíl oproti díře, kterou to nahrazuje.
+
+### Co zůstává otevřené
+
+- `account_members` se pořád nečte a `ACCOUNT_ID` je konstanta. Dokud to platí,
+  je každá session plným přístupem k účtu 1 — proto ta přísnost u registrace.
+  Skutečné oddělení účtů je práce na samostatnou změnu.
+- Přihlašovací formulář teď dělá stejnou práci pro známý i neznámý e-mail
+  (falešný PBKDF2 hash), takže z času odpovědi nejde poznat, kdo tu účet má.

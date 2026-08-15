@@ -41,15 +41,34 @@ export function RegisterForm({ siteKey }: { siteKey: string }) {
   const [token, setToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // The submit button is disabled until Turnstile hands over a token. When the
+  // widget never loads — blocked script, wrong site key for this hostname — the
+  // page would otherwise render a complete form with a dead grey button and no
+  // explanation at all.
+  const [widgetBroken, setWidgetBroken] = useState<string | null>(null);
 
   useEffect(() => {
-    if (window.turnstile && widget.current && widgetId.current === null) {
+    const render = () => {
+      if (!window.turnstile || !widget.current || widgetId.current !== null) return;
       widgetId.current = window.turnstile.render(widget.current, {
         sitekey: siteKey,
-        callback: setToken,
+        callback: (value) => {
+          setWidgetBroken(null);
+          setToken(value);
+        },
         "expired-callback": () => setToken(""),
-        "error-callback": () => setToken(""),
+        "error-callback": () => {
+          setToken("");
+          setWidgetBroken(
+            "Ověření proti botům se nepovedlo načíst. Zkus obnovit stránku; " +
+              "když to nepomůže, klíč Turnstile nejspíš nepatří k téhle adrese.",
+          );
+        },
       });
+    };
+
+    if (window.turnstile) {
+      render();
       return;
     }
 
@@ -57,17 +76,24 @@ export function RegisterForm({ siteKey }: { siteKey: string }) {
     script.src =
       "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
     script.async = true;
-    script.onload = () => {
-      if (window.turnstile && widget.current && widgetId.current === null) {
-        widgetId.current = window.turnstile.render(widget.current, {
-          sitekey: siteKey,
-          callback: setToken,
-          "expired-callback": () => setToken(""),
-          "error-callback": () => setToken(""),
-        });
-      }
-    };
+    script.onload = render;
+    script.onerror = () =>
+      setWidgetBroken(
+        "Ochranu proti botům se nepodařilo stáhnout — blokuje ji nejspíš " +
+          "rozšíření v prohlížeči nebo síť.",
+      );
     document.head.appendChild(script);
+
+    // A script that neither loads nor errors (a hung request) would leave the
+    // form silent forever, so say something after a sensible wait.
+    const timeout = setTimeout(() => {
+      if (widgetId.current === null) {
+        setWidgetBroken(
+          "Ověření proti botům se pořád nenačetlo. Zkus obnovit stránku.",
+        );
+      }
+    }, 10_000);
+    return () => clearTimeout(timeout);
   }, [siteKey]);
 
   return (
@@ -136,6 +162,7 @@ export function RegisterForm({ siteKey }: { siteKey: string }) {
 
       <div ref={widget} className="turnstile" />
 
+      {widgetBroken ? <p className="login-error">{widgetBroken}</p> : null}
       {error ? <p className="login-error">{error}</p> : null}
 
       <button type="submit" disabled={pending || token === ""}>
