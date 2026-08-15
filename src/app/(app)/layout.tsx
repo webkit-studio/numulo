@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { LogoutButton } from "../logout-button";
 import { NavLink } from "./nav-link";
+import { ToastProvider } from "@/components/toast/toast";
 
 /**
  * Desktop sidebar in four groups, mobile tab bar in four tabs — the IA from
@@ -49,6 +50,7 @@ export default async function AppLayout({
   const user = await getCurrentUser();
 
   return (
+    <ToastProvider>
     <div className="app-shell">
       <aside className="app-sidebar">
         <Link href="/" className="app-wordmark">
@@ -84,5 +86,6 @@ export default async function AppLayout({
         ))}
       </nav>
     </div>
+    </ToastProvider>
   );
 }

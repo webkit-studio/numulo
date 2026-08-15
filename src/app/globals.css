@@ -760,3 +760,175 @@ input {
 }
 
 .settings-saved { margin: 0; color: var(--viz-good); font-size: var(--numo-text-sm); }
+
+/* ───────────────────────────────────────────────────────────────── toasts */
+
+.toasts {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 50;
+  display: grid;
+  justify-items: center;
+  gap: var(--numo-space-2);
+  padding: var(--numo-space-4);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--numo-space-4);
+  max-width: min(520px, 100%);
+  padding: var(--numo-space-3) var(--numo-space-4);
+  border-radius: var(--numo-radius-md);
+  background: var(--numo-text);
+  color: var(--numo-surface);
+  font-size: var(--numo-text-sm);
+  box-shadow: 0 8px 24px rgb(16 24 40 / 18%);
+  pointer-events: auto;
+  animation: toast-in 160ms ease-out;
+}
+
+.toast button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.toast-success { background: #0b5c2f; }
+.toast-danger { background: var(--viz-critical); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
+
+@media (max-width: 780px) {
+  /* Clear of the tab bar, or it covers the thing it is talking about. */
+  .toasts { bottom: 72px; }
+}
+
+/* ─────────────────────────────────────────────── interactive transactions */
+
+.tx-row.is-busy { opacity: 0.5; }
+
+/* The chip *is* the control: a select styled to look like the static chip, so
+   the same element that shows the category is the one that changes it. */
+.tx-chip-select { padding-right: var(--numo-space-1); }
+
+.tx-chip-select select {
+  border: 0;
+  background: none;
+  font-size: inherit;
+  padding: 0 var(--numo-space-1) 0 0;
+  cursor: pointer;
+  max-width: 140px;
+}
+
+.tx-menu { position: relative; }
+
+.tx-menu summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 1px var(--numo-space-2);
+  border-radius: 999px;
+  color: var(--numo-text-muted);
+}
+
+.tx-menu summary::-webkit-details-marker { display: none; }
+.tx-menu summary:hover { background: var(--numo-bg); }
+
+.tx-menu-body {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 0;
+  min-width: 210px;
+  display: grid;
+  padding: var(--numo-space-1);
+  border: 1px solid var(--numo-border);
+  border-radius: var(--numo-radius-md);
+  background: var(--numo-surface);
+  box-shadow: 0 8px 24px rgb(16 24 40 / 12%);
+}
+
+.tx-menu-body button {
+  text-align: left;
+  padding: var(--numo-space-2) var(--numo-space-3);
+  border: 0;
+  border-radius: var(--numo-radius-sm);
+  background: none;
+  font-size: var(--numo-text-sm);
+  cursor: pointer;
+}
+
+.tx-menu-body button:hover { background: var(--numo-bg); }
+
+/* ─────────────────────────────────────────────────────────── sorting view */
+
+.sort-ai {
+  display: flex;
+  align-items: center;
+  gap: var(--numo-space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--numo-space-4);
+  padding-bottom: var(--numo-space-4);
+  border-bottom: 1px solid var(--numo-border);
+}
+
+.sort-ai button {
+  padding: var(--numo-space-2) var(--numo-space-4);
+  border: 1px solid var(--numo-border);
+  border-radius: var(--numo-radius-md);
+  background: var(--numo-surface);
+  font-size: var(--numo-text-sm);
+  cursor: pointer;
+}
+
+.sort-ai .seed-hint { margin: 0; }
+
+.sort-list { list-style: none; margin: 0; padding: 0; }
+
+.sort-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--numo-space-4);
+  padding: var(--numo-space-3) 0;
+  border-bottom: 1px solid var(--numo-border);
+}
+
+.sort-row.is-done { opacity: 0.45; }
+.sort-main { display: grid; gap: 3px; min-width: 0; }
+
+.sort-merchant {
+  font-size: var(--numo-text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sort-actions { display: flex; align-items: center; gap: var(--numo-space-2); }
+
+.sort-actions select {
+  padding: var(--numo-space-1) var(--numo-space-2);
+  border: 1px solid var(--numo-border);
+  border-radius: var(--numo-radius-md);
+  background: var(--numo-surface);
+  font-size: var(--numo-text-sm);
+}
+
+/* An AI suggestion is an offer, not a decision — it needs one click to land. */
+.chip.is-suggested {
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.sort-settled { color: var(--numo-text-muted); font-size: var(--numo-text-sm); }

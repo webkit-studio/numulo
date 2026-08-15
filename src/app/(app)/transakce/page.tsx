@@ -88,6 +88,7 @@ export default async function TransactionsPage({
       <section className="card">
         <TransactionList
           transactions={transactions}
+          categories={categories}
           emptyNote="Nic neodpovídá filtrům."
         />
       </section>

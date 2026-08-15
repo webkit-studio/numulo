@@ -8,6 +8,7 @@ import { TransactionList } from "@/components/transaction-list";
 import { computeDailyLimit } from "@/lib/calc/daily-limit";
 import {
   getAccount,
+  getCategories,
   getDailySpending,
   getDefaultMonth,
   getEnvelopes,
@@ -38,7 +39,7 @@ export default async function OverviewPage({
       ? requested
       : await getDefaultMonth(today);
 
-  const [account, balance, reserve, envelopes, days, recent, latest, uncategorised] =
+  const [account, balance, reserve, envelopes, days, recent, latest, uncategorised, categories] =
     await Promise.all([
       getAccount(),
       getMonthBalance(month),
@@ -48,6 +49,7 @@ export default async function OverviewPage({
       getTransactions({ month, limit: 8 }),
       getLatestTransactionDate(),
       getUncategorisedCount(month),
+      getCategories(),
     ]);
 
   // Rezerva only means something once the opening cash position is entered.
@@ -189,6 +191,7 @@ export default async function OverviewPage({
         </header>
         <TransactionList
           transactions={recent}
+          categories={categories}
           emptyNote="V tomhle měsíci nejsou žádné transakce."
         />
       </section>

@@ -380,3 +380,55 @@ export async function getLatestTransactionDate(): Promise<string | null> {
     .where(eq(transactions.accountId, ACCOUNT_ID));
   return row?.latest ?? null;
 }
+
+export interface MerchantGroup {
+  merchant: string;
+  count: number;
+  /** Positive total spent with this merchant across the whole history. */
+  total: number;
+  firstDate: string;
+  lastDate: string;
+  sampleId: number;
+}
+
+/**
+ * Uncategorised spending grouped by merchant, biggest first.
+ *
+ * Sorting one merchant sorts every transaction from it, so this turns a
+ * hundred-row chore into a handful of decisions — and the biggest money gets
+ * decided first.
+ */
+export async function getUncategorisedMerchants(
+  limit = 60,
+): Promise<MerchantGroup[]> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      merchant: sql<string>`coalesce(${transactions.merchant}, ${transactions.description})`,
+      count: sql<number>`count(*)`,
+      total: sql<number>`-sum(${transactions.amount})`,
+      firstDate: sql<string>`min(${transactions.date})`,
+      lastDate: sql<string>`max(${transactions.date})`,
+      sampleId: sql<number>`min(${transactions.id})`,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.accountId, ACCOUNT_ID),
+        sql`${transactions.categoryId} is null`,
+        householdSpending,
+      ),
+    )
+    .groupBy(sql`coalesce(${transactions.merchant}, ${transactions.description})`)
+    .orderBy(sql`-sum(${transactions.amount}) desc`)
+    .limit(limit);
+
+  return rows.map((row) => ({
+    merchant: row.merchant ?? "—",
+    count: Number(row.count),
+    total: Number(row.total),
+    firstDate: row.firstDate,
+    lastDate: row.lastDate,
+    sampleId: Number(row.sampleId),
+  }));
+}

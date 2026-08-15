@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.117.1",
     "@types/papaparse": "^5.5.2",
     "drizzle-orm": "^0.45.2",
     "next": "15.5.23",
