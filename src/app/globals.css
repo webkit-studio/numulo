@@ -1082,3 +1082,63 @@ input {
   .crud-fields { grid-template-columns: minmax(0, 1fr); }
   .crud-field.is-half { grid-column: 1 / -1; }
 }
+
+/* ------------------------------------------------------- pravidelné platby */
+
+.paid-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--numo-space-2);
+  margin-top: var(--numo-space-3);
+  padding-top: var(--numo-space-3);
+  border-top: 1px dashed var(--numo-border);
+}
+
+.paid-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--numo-space-2);
+  padding: var(--numo-space-1) var(--numo-space-3);
+  border: 1px solid var(--numo-border);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: var(--numo-text-xs);
+  color: var(--numo-text-muted);
+}
+
+.paid-toggle:has(input:checked) {
+  border-color: var(--numo-positive);
+  color: var(--numo-positive);
+}
+
+.detect { display: grid; gap: var(--numo-space-3); justify-items: start; }
+
+.detect > button, .cancel-sim button.chip {
+  cursor: pointer;
+}
+
+.detect > button {
+  padding: var(--numo-space-2) var(--numo-space-4);
+  border: 1px solid var(--numo-border);
+  border-radius: var(--numo-radius-md);
+  background: var(--numo-surface);
+  color: var(--numo-text);
+  font-size: var(--numo-text-sm);
+}
+
+.detect .crud-list { width: 100%; }
+
+.detect .crud-actions button {
+  width: auto;
+  padding: 0 var(--numo-space-2);
+  font-size: var(--numo-text-xs);
+}
+
+.cancel-sim { display: grid; gap: var(--numo-space-3); }
+.cancel-result { margin: 0; font-size: var(--numo-text-sm); }
+
+.card-sub-inline {
+  margin: var(--numo-space-4) 0 0;
+  padding-top: var(--numo-space-3);
+  border-top: 1px dashed var(--numo-border);
+}

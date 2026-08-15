@@ -1,4 +1,4 @@
-import { and, asc, eq, like, sum } from "drizzle-orm";
+import { and, asc, eq, like, lt, sql, sum } from "drizzle-orm";
 import { getDb } from "@/db/getDb";
 import {
   debtPayments,
@@ -126,4 +126,35 @@ export async function getMonthlyGoal(month: IsoMonth): Promise<MonthlyGoal> {
     ],
     plannedItems: planned,
   });
+}
+
+/* -------------------------------------------------------------- detection */
+
+/**
+ * Household spending shaped for the subscription detector.
+ *
+ * Only merchant, amount, month and day cross over — the detector is arithmetic
+ * on those four fields and has no business seeing anything else.
+ */
+export async function getRecurringCandidates(): Promise<
+  { merchant: string; amount: number; month: string; day: number }[]
+> {
+  const rows = await getDb()
+    .select({
+      merchant: sql<string>`coalesce(nullif(${transactions.merchant}, ''), ${transactions.description})`,
+      amount: sql<number>`-${transactions.amount}`,
+      month: sql<string>`substr(${transactions.date}, 1, 7)`,
+      day: sql<number>`cast(substr(${transactions.date}, 9, 2) as integer)`,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.accountId, ACCOUNT_ID),
+        eq(transactions.isTransfer, false),
+        eq(transactions.isBusiness, false),
+        lt(transactions.amount, 0),
+      ),
+    );
+
+  return rows.filter((row) => row.merchant !== null && row.merchant !== "");
 }
