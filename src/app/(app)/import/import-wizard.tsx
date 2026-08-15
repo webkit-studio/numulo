@@ -233,9 +233,9 @@ export function ImportWizard({ aiAvailable }: { aiAvailable: boolean }) {
             onChange={(event) => setInstructions(event.target.value)}
           />
           <span className="crud-hint">
-            Uloží se k importu.
+            Uloží se k importu jako poznámka.
             {aiAvailable
-              ? " Přes AI se z nich dají navrhnout pravidla — na stránce Transakce."
+              ? " Pravidla se z nich dají navrhnout níž na téhle stránce."
               : ""}
           </span>
         </label>

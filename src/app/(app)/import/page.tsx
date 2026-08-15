@@ -3,7 +3,9 @@ import { hasAiKey } from "@/lib/env";
 import { listProfiles } from "@/lib/import/profiles";
 import { getImportHistory } from "@/lib/data/imports";
 import { formatDayMonth } from "@/components/money";
+import { getCategories, getUsers } from "@/lib/data/queries";
 import { ImportWizard } from "./import-wizard";
+import { InstructionRules } from "./instruction-rules";
 import { ProfileList } from "./profile-list";
 import { SeedForm } from "./seed-form";
 
@@ -11,9 +13,12 @@ export const metadata: Metadata = { title: "numo — import" };
 export const dynamic = "force-dynamic";
 
 export default async function ImportPage() {
-  const [profiles, history] = await Promise.all([
+  const aiAvailable = hasAiKey();
+  const [profiles, history, categories, users] = await Promise.all([
     listProfiles(),
     getImportHistory(),
+    getCategories(),
+    getUsers(),
   ]);
 
   return (
@@ -35,8 +40,25 @@ export default async function ImportPage() {
             není jisté, zeptá se místo aby hádalo.
           </p>
         </header>
-        <ImportWizard aiAvailable={hasAiKey()} />
+        <ImportWizard aiAvailable={aiAvailable} />
       </section>
+
+      {aiAvailable ? (
+        <section className="card">
+          <header className="card-head">
+            <h2>Pravidla z pokynů</h2>
+            <p className="card-sub">
+              Napiš větou, co se má kam řadit. AI z toho navrhne pravidla, ty
+              zaškrtneš, co sedí. Model nevidí ani jeden řádek výpisu — čte jen
+              tu větu a jména kategorií a lidí, co existují.
+            </p>
+          </header>
+          <InstructionRules
+            categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+            users={users}
+          />
+        </section>
+      ) : null}
 
       {profiles.length > 0 ? (
         <section className="card">
