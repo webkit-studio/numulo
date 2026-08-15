@@ -1370,3 +1370,5 @@ input {
 }
 
 .import-totals th:first-child, .import-totals td:first-child { text-align: left; }
+
+.turnstile { min-height: 65px; }

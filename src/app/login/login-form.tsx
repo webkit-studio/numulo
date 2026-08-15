@@ -76,6 +76,10 @@ export function LoginForm({ next }: { next: string }) {
       <Link href="/heslo" className="login-secondary">
         Nastavit nebo zapomenuté heslo
       </Link>
+
+      <Link href="/registrace" className="login-secondary">
+        Nemáš účet? Založ si ho
+      </Link>
     </form>
   );
 }

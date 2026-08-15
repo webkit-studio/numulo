@@ -8,6 +8,8 @@ import { SESSION_COOKIE, readSessionToken } from "@/lib/auth/session";
 const PUBLIC_PATHS = new Set([
   "/login",
   "/heslo",
+  "/registrace",
+  "/api/auth/register",
   "/api/auth/login",
   "/api/auth/logout",
   "/api/auth/password-help",

@@ -6,6 +6,7 @@ import {
   getCategories,
   getDefaultMonth,
   getMonthsWithData,
+  getReviewCount,
   getTransactions,
   getUsers,
 } from "@/lib/data/queries";
@@ -36,8 +37,9 @@ export default async function TransactionsPage({
   const categoryId = one(params.kategorie);
   const business = one(params.podnikani) === "1";
   const transfer = one(params.prevody) === "1";
+  const reviewOnly = one(params.schvalit) === "1";
 
-  const [transactions, categories, users] = await Promise.all([
+  const [transactions, categories, users, reviewCount] = await Promise.all([
     getTransactions({
       month,
       search: search ?? undefined,
@@ -45,10 +47,12 @@ export default async function TransactionsPage({
       categoryId: categoryId ? Number(categoryId) : undefined,
       business,
       transfer,
+      reviewOnly,
       limit: 500,
     }),
     getCategories(),
     getUsers(),
+    getReviewCount(),
   ]);
 
   const spent = transactions.reduce(
@@ -83,6 +87,8 @@ export default async function TransactionsPage({
         categoryId={categoryId}
         business={business}
         transfer={transfer}
+        reviewOnly={reviewOnly}
+        reviewCount={reviewCount}
       />
 
       <section className="card">

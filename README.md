@@ -7,10 +7,13 @@ Revolut) a výjimečně ručním zápisem.
 numo odpovídá na tři otázky: **Můžu dnes utrácet? Zvládáme tenhle měsíc?
 Lezeme z toho ven?**
 
-**Stav: fáze 1 (kostra) hotová.** Co běží: nasazovatelná appka na Webflow
-Cloud, brána hesla, databázové schéma s migrací, seed uživatelů a kategorií,
-a jádro výpočtů s testy. Obrazovky se staví ve fázích 2–4 — čeká se na
-vzorky CSV a na design bundle. Detaily a otevřené otázky: `docs/decisions.md`.
+**Stav: v1.0 postavená.** Běží všechny obrazovky — Přehled, Plán, Pravidelné,
+Vývoj, Dluhy, Transakce, Roztřídit, Import, Zapsat výdaj a Nastavení — nad
+reálnými daty. Přihlášení e-mailem, registrace s ochranou proti botům, import
+libovolného CSV výpisu s náhledem a archivací, pravidla, AI vrstva a PWA
+manifest. Vizuální vrstva stojí na zástupných tokenech: design bundle z Claude
+Design zatím není dostupný, tokeny se vyměňují v jednom souboru
+(`src/styles/tokens.css`). Detaily a otevřené otázky: `docs/decisions.md`.
 
 ## Stack
 
@@ -22,6 +25,7 @@ vzorky CSV a na design bundle. Detaily a otevřené otázky: `docs/decisions.md`
 | Soubory     | Webflow Cloud Object Storage (archiv syrových CSV)        |
 | Testy       | Vitest                                                    |
 | AI          | Claude API (`claude-haiku-4-5`), výhradně server-side, volitelné |
+| Ochrana proti botům | Cloudflare Turnstile (jen registrace), volitelné    |
 
 ## Struktura
 
@@ -31,10 +35,16 @@ src/
   app/                 App Router — stránky a API routy
   db/                  Drizzle schéma a připojení k D1
   lib/
-    auth/              podepsaná session cookie a brána hesla
+    ai/                volání Claude — jen server, jen názvy, nikdy řádky dat
+    auth/              hesla, session cookie, reset přes e-mail, Turnstile
+    crud/              sdílená vrstva pro editovatelné seznamy
+    debts/             párování splátek podle VS a čísla účtu
+    import/            dekódování, sniffing, mapování sloupců, pipeline
+    recurring/         detekce pravidelných plateb
+    rules/             naučená pravidla a jejich aplikace
     calc/              čisté výpočtové funkce + unit testy
     date.ts money.ts   ISO datumy a peníze v haléřích
-  middleware.ts        brána hesla před celou appkou
+  middleware.ts        přihlašovací brána před celou appkou
   styles/tokens.css    design tokeny (zatím placeholder)
 docs/                  nastavení, rozhodnutí, mapping tokenů
 ```

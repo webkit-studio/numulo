@@ -17,4 +17,8 @@ interface CloudflareEnv {
   NUMO_MAIL_FROM?: string;
   /** Claude API key. When absent, AI features stay hidden and the app still works. */
   ANTHROPIC_API_KEY?: string;
+  /** Cloudflare Turnstile secret. Without it public registration stays closed. */
+  TURNSTILE_SECRET_KEY?: string;
+  /** Turnstile site key — public by design, rendered into the sign-up form. */
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY?: string;
 }

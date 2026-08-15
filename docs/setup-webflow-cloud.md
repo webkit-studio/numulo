@@ -151,3 +151,35 @@ Podrobně jsou rozepsané v `docs/decisions.md`.
    stáhnout, viz `docs/design-tokens-mapping.md`.
 4. **Počáteční stav pro Rezervu** — kolik máte dnes celkem na sledovaných
    účtech a k jakému datu.
+
+## Proměnné prostředí — doplněk k v1.0
+
+Nastavují se v Webflow Cloud UI (Environment → Variables), nikdy v repu.
+
+| Proměnná | Povinná | K čemu |
+| --- | --- | --- |
+| `NUMO_SESSION_SECRET` | ne | Podpis session cookie. Bez ní si numo klíč vyrobí samo a uloží do databáze. |
+| `RESEND_API_KEY` | ne | Odeslání odkazu na nastavení / zapomenuté heslo. |
+| `NUMO_MAIL_FROM` | ne | Odesílatel těch e-mailů, např. `numo <numo@svobs.cz>`. |
+| `ANTHROPIC_API_KEY` | ne | AI vrstva. Bez ní appka běží a AI prvky se skryjí. |
+| `TURNSTILE_SECRET_KEY` | pro registraci | Ochrana proti botům na registračním formuláři. |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | pro registraci | Veřejný klíč Turnstile, vykreslí se do formuláře. |
+
+### Turnstile
+
+1. V Cloudflare dashboardu → Turnstile → Add site, doména nasazení.
+2. Site key jde do `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, secret do `TURNSTILE_SECRET_KEY`.
+3. Bez obou zůstane registrace zavřená — stránka `/registrace` to napíše rovnou.
+   Otevřený formulář s tiše vypnutou kontrolou je horší než žádný, protože
+   vypadá chráněně a nikdo by se nedozvěděl opak.
+
+Pro lokální vývoj má Cloudflare testovací klíče, které vždycky projdou:
+`1x00000000000000000000AA` (site) a `1x0000000000000000000000000000000AA`
+(secret). Do produkce nepatří.
+
+## Object Storage
+
+Binding `IMPORTS` (bucket `numo-imports`) drží syrové CSV soubory tak, jak
+přišly. Každé číslo v numo se z nich dá znovu spočítat. Když binding chybí,
+import projde a jen se nearchivuje — v historii importů je pak u záznamu
+„bez archivu".

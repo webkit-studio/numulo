@@ -7,6 +7,8 @@ type NumoEnv = Partial<
     | "ANTHROPIC_API_KEY"
     | "RESEND_API_KEY"
     | "NUMO_MAIL_FROM"
+    | "TURNSTILE_SECRET_KEY"
+    | "NEXT_PUBLIC_TURNSTILE_SITE_KEY"
   >
 >;
 
@@ -24,6 +26,14 @@ export function getEnvVar(name: keyof NumoEnv): string | undefined {
     // No Cloudflare context (plain node, tests) — fall through.
   }
   return process.env[name];
+}
+
+/** True when the bot check is configured; without it registration stays shut. */
+export function hasTurnstile(): boolean {
+  return Boolean(
+    getEnvVar("TURNSTILE_SECRET_KEY") &&
+      getEnvVar("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),
+  );
 }
 
 /** True when the Claude API key is configured; AI features hide without it. */

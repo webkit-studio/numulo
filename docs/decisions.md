@@ -187,3 +187,63 @@ pro lokální SQLite a nese s sebou nativní build, který zatím k ničemu nen�
 
 8. **Mount path** — počítám s `/numo`. Když ve Webflow Cloudu zvolíš jinou
    cestu, změním jeden řádek v `next.config.ts`.
+
+## v1.0 — rozhodnutí učiněná při stavbě obrazovek
+
+### Import je generický, ne per-banka
+
+Zadání mluvilo o Air Bank a Revolutu. Napevno napsané dva parsery by ale
+znamenaly, že třetí banka (nebo změna exportu) je nová práce v kódu. Místo
+toho se formát pozná: oddělovač, počet řádků nad hlavičkou, kódování a
+přiřazení sloupců podle názvů hlaviček. Ověřeno na obou tvarech výpisu —
+Air Bank (windows-1250, středníky, preambule, české desetinné čárky) i
+Revolut (UTF-8, čárky, anglické hlavičky) projdou bez jediné konstanty.
+
+Potvrzený formát se uloží jako `format_profile` podle otisku hlavičky, takže
+další výpis ze stejné banky se načte bez ptaní.
+
+### AI je záloha, ne výchozí cesta
+
+Heuristika podle názvů hlaviček sedí na každý český bankovní export, nic
+nestojí a nemůže si vymyslet odpověď. Claude se ptá jen tehdy, když
+heuristika sloupec nenajde. Vrácený název sloupce, který v souboru není, se
+zahodí — stejně jako kategorie, která neexistuje.
+
+Model nikdy nevidí řádek dat. Dostává názvy sloupců, tři ukázkové hodnoty,
+jména kategorií a lidí, a tu jednu větu pokynů. Rozhoduje kód.
+
+### Mazání s undo místo potvrzovacího dialogu
+
+Dialog „opravdu?" před každým smazáním čte jako nedůvěra a lidé ho odklikají
+bez čtení. Toast s „Vrátit" po smazání je rychlejší a pokryje i ty omyly,
+které by potvrzovací dialog mávnutím pustil dál. Server vrací smazaný řádek,
+takže undo ho umí založit zpátky.
+
+### Párování splátek jen podle VS nebo čísla účtu
+
+Jméno věřitele nestačí. „SPLÁTKA DLUHU" se ve výpisu objevuje u plateb víc
+lidem a párovat podle toho by znamenalo odepsat peníze někomu jinému.
+V reálných datech u těchhle plateb žádný VS ani protiúčet není, takže
+automat správně nenajde nic — proto je vedle něj druhá cesta, kde numo
+nabídne kandidáty a člověk u každého vybere dluh.
+
+### Registrace je zavřená, dokud není nastavený Turnstile
+
+Otevřený formulář s tiše vypnutou kontrolou botů vypadá chráněně a nikdo by
+se nedozvěděl opak, dokud není tabulka plná nesmyslných účtů.
+
+### Otisk ručního záznamu není odvozený z obsahu
+
+Dvě kafe za stejnou cenu ve stejný den jsou dvě platby. Hash z obsahu by tu
+druhou spolkl přesně tak, jak tomu u importu brání pořadový index.
+
+## Co zůstává otevřené
+
+- **Design bundle z Claude Design** je pořád nedostupný (DesignSync chce
+  `/design-login`, přímé stažení vrací 403). Tokeny v `src/styles/tokens.css`
+  jsou zástupné a vymění se jedním souborem.
+- **`docs/numo-spec.md`** nikdy nedorazil. `computeDailyLimit` je proto
+  označený jako PROVISIONAL a na Přehledu má u sebe štítek.
+- **Volání Claude API nebylo ověřeno naživo** — v tomhle prostředí není
+  `ANTHROPIC_API_KEY`. Ověřeno je, že bez klíče appka běží a routy vrací 503,
+  a unit testy pokrývají vrstvu, která model hlídá.

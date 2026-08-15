@@ -268,6 +268,7 @@ export interface TransactionRow {
   ownerName: string | null;
   isBusiness: boolean;
   isTransfer: boolean;
+  status: "confirmed" | "review";
 }
 
 export interface TransactionFilters {
@@ -277,6 +278,8 @@ export interface TransactionFilters {
   categoryId?: number;
   business?: boolean;
   transfer?: boolean;
+  /** Only rows an import left flagged for a human to look at. */
+  reviewOnly?: boolean;
   limit?: number;
 }
 
@@ -304,6 +307,7 @@ export async function getTransactions(
   // every total on screen.
   if (!filters.business) conditions.push(eq(transactions.isBusiness, false));
   if (!filters.transfer) conditions.push(eq(transactions.isTransfer, false));
+  if (filters.reviewOnly) conditions.push(eq(transactions.status, "review"));
 
   return db
     .select({
@@ -318,6 +322,7 @@ export async function getTransactions(
       ownerName: users.name,
       isBusiness: transactions.isBusiness,
       isTransfer: transactions.isTransfer,
+      status: transactions.status,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -352,6 +357,21 @@ export async function getSettings() {
     .from(settings)
     .where(eq(settings.accountId, ACCOUNT_ID));
   return row ?? null;
+}
+
+/** Rows an import flagged for review and nobody has confirmed yet. */
+export async function getReviewCount(): Promise<number> {
+  const db = getDb();
+  const [row] = await db
+    .select({ value: count() })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.accountId, ACCOUNT_ID),
+        eq(transactions.status, "review"),
+      ),
+    );
+  return row?.value ?? 0;
 }
 
 /** How many transactions still have no category — the honest "unsorted" count. */

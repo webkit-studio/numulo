@@ -20,6 +20,8 @@ export function TransactionFilters({
   categoryId,
   business,
   transfer,
+  reviewOnly,
+  reviewCount,
 }: {
   categories: Option[];
   users: Option[];
@@ -29,6 +31,8 @@ export function TransactionFilters({
   categoryId: string | null;
   business: boolean;
   transfer: boolean;
+  reviewOnly: boolean;
+  reviewCount: number;
 }) {
   const build = (overrides: Record<string, string | null>) => {
     const query = new URLSearchParams();
@@ -38,6 +42,7 @@ export function TransactionFilters({
     if (categoryId) query.set("kategorie", categoryId);
     if (business) query.set("podnikani", "1");
     if (transfer) query.set("prevody", "1");
+    if (reviewOnly) query.set("schvalit", "1");
 
     for (const [key, value] of Object.entries(overrides)) {
       if (value === null) query.delete(key);
@@ -116,6 +121,16 @@ export function TransactionFilters({
         >
           Převody
         </Link>
+        {/* Only offered when there is something to review — an always-present
+            chip that always shows nothing teaches people to ignore it. */}
+        {reviewCount > 0 || reviewOnly ? (
+          <Link
+            href={build({ schvalit: reviewOnly ? null : "1" })}
+            className={`chip${reviewOnly ? " is-on" : ""}`}
+          >
+            Ke schválení · {reviewCount}
+          </Link>
+        ) : null}
       </div>
     </div>
   );
