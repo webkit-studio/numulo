@@ -30,6 +30,7 @@ const GROUPS = [
     label: "Data",
     items: [
       { href: "/transakce", text: "Transakce" },
+      { href: "/transakce/roztridit", text: "Roztřídit" },
       { href: "/import", text: "Import" },
       { href: "/nastaveni", text: "Nastavení" },
     ],

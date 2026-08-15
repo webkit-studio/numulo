@@ -18,7 +18,14 @@ export function CancelSimulator({
   const [selected, setSelected] = useState<number[]>([]);
   const freed = simulateCancellation(items, selected);
 
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return (
+      <p className="empty-note">
+        Až přibudou předplatná a měsíční platby, spočítám tu, kolik ušetříte
+        zrušením.
+      </p>
+    );
+  }
 
   return (
     <div className="cancel-sim">

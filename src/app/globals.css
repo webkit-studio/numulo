@@ -381,15 +381,30 @@ input {
   padding: var(--numo-space-5);
 }
 
+/* Title on its own line with the explanation under it. Side by side, a long
+   card-sub reads as a second column and the heading loses its line. */
 .card-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--numo-space-3);
+  display: grid;
+  gap: var(--numo-space-1);
   margin-bottom: var(--numo-space-4);
 }
 
 .card-head h2 { margin: 0; font-size: var(--numo-text-base); }
+
+/* Cards with a single short action keep it on the title's line. */
+.card-head:has(> .card-action) {
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+}
+
+.card-head:has(> .card-action) > .card-sub { grid-column: 1 / -1; }
+
+.card-sub {
+  margin: 0;
+  color: var(--numo-text-muted);
+  font-size: var(--numo-text-sm);
+  max-width: 70ch;
+}
 .card-action, .envelope-action { font-size: var(--numo-text-sm); }
 
 .card-lede {

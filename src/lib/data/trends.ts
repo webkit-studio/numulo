@@ -124,6 +124,7 @@ export interface TrendsData {
   months: MonthResult[];
   forecasts: Forecast[];
   cash: CashPoint[];
+  cashStartsAt: IsoMonth | null;
   variableAverage: number;
   /** Mean household spending across completed months. */
   averageExpenses: number;
@@ -205,6 +206,18 @@ export async function getTrends(
 
   const netAfterCutoff = await netByMonthAfter(account.initialBalanceDate);
 
+  // The cash line may only start where numo knows the balance. Everything
+  // before the opening-balance date is history that was deliberately excluded
+  // from Rezerva, so drawing it would assert a position nobody entered — a
+  // flat line at the opening balance across months that actually moved.
+  const cashFrom = account.initialBalanceDate
+    ? account.initialBalanceDate.slice(0, 7)
+    : firstMonth;
+
+  const cashMonths = [...pastMonths, ...futureMonths].filter(
+    (month) => month >= cashFrom,
+  );
+
   const cash = cashOverTime({
     initialBalance: account.initialBalance,
     // The cut-off is already applied in the query above, so applying it again
@@ -217,7 +230,7 @@ export async function getTrends(
       isBusiness: false,
       isTransfer: false,
     })),
-    months: [...pastMonths, ...futureMonths],
+    months: cashMonths,
     currentMonth: addMonths(lastActual, 1),
     forecastResultByMonth,
   });
@@ -236,6 +249,8 @@ export async function getTrends(
     months,
     forecasts,
     cash,
+    /** Set when the chart starts later than the data, so the page can say why. */
+    cashStartsAt: cashFrom > firstMonth ? cashFrom : null,
     variableAverage,
     averageExpenses: mean(recent.map((month) => month.expenses)),
     averageIncome: mean(recent.map((month) => month.income)),

@@ -71,9 +71,17 @@ export default async function OverviewPage({
           {latest ? (
             <p className="page-sub">
               výpis k {formatDayMonth(latest)}
-              {uncategorised > 0
-                ? ` · ${uncategorised} útrat bez kategorie`
-                : null}
+              {uncategorised > 0 ? (
+                <>
+                  {" · "}
+                  {/* With most of the month unsorted the envelopes are empty and
+                      every category number is wrong — so this is a link, not a
+                      statistic. */}
+                  <Link href="/transakce/roztridit">
+                    {uncategorised} útrat bez kategorie — roztřídit ›
+                  </Link>
+                </>
+              ) : null}
             </p>
           ) : null}
         </div>

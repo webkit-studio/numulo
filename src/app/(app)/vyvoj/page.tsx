@@ -101,6 +101,13 @@ export default async function TrendsPage() {
             Plná čára je skutečnost, tečkovaná odhad. Odhad staví na
             pravidelných platbách, splátkách a šestiměsíčním průměru
             proměnlivých útrat.
+            {trends.cashStartsAt ? (
+              <>
+                {" "}Začíná v {trends.cashStartsAt} — od zadaného počátečního
+                stavu. Co bylo dřív, je historie: sytí průměry, ale zůstatek
+                z ní numo nezná a nebude si ho domýšlet.
+              </>
+            ) : null}
           </p>
         </header>
         <CashLine points={trends.cash} />

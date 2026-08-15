@@ -8,10 +8,22 @@ import { formatCzk } from "@/lib/money";
  * nothing" is the only reading of this chart anyone actually wants. Months
  * projected below zero get the critical colour *and* a marker, so the warning
  * survives a black-and-white print.
+ *
+ * The viewBox keeps its own aspect ratio rather than being stretched to the
+ * container: a squashed chart turns markers into ovals and, worse, makes a
+ * gentle slope look like a cliff.
  */
+
+const WIDTH = 600;
+const HEIGHT = 160;
+
 export function CashLine({ points }: { points: CashPoint[] }) {
   if (points.length < 2) {
-    return <p className="empty-note">Na čáru je potřeba aspoň pár měsíců.</p>;
+    return (
+      <p className="empty-note">
+        Na čáru je potřeba aspoň pár měsíců, u kterých numo zná zůstatek.
+      </p>
+    );
   }
 
   const values = points.map((point) => point.cash);
@@ -19,50 +31,36 @@ export function CashLine({ points }: { points: CashPoint[] }) {
   const min = Math.min(...values, 0);
   const span = max - min || 1;
 
-  const width = 100;
-  const height = 100;
-  const x = (index: number) => (index / (points.length - 1)) * width;
-  const y = (value: number) => height - ((value - min) / span) * height;
+  const x = (index: number) => (index / (points.length - 1)) * WIDTH;
+  const y = (value: number) => HEIGHT - ((value - min) / span) * HEIGHT;
 
-  const actual = points.filter((point) => point.kind === "actual");
-  const line = (subset: CashPoint[], offset: number) =>
-    subset
-      .map((point, index) => `${x(index + offset)},${y(point.cash)}`)
-      .join(" ");
+  const actualCount = points.filter((point) => point.kind === "actual").length;
+  const path = (subset: CashPoint[], offset: number) =>
+    subset.map((point, index) => `${x(index + offset)},${y(point.cash)}`).join(" ");
 
+  // The forecast starts on the last actual point so the two halves join up.
+  const joinAt = Math.max(actualCount - 1, 0);
   const zeroY = y(0);
   const firstBelow = points.find((point) => point.belowZero);
 
   return (
     <div className="cash-line">
       <svg
-        viewBox={`0 0 ${width} ${height}`}
-        preserveAspectRatio="none"
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="img"
         aria-label={`Hotovost od ${points[0].month} do ${points[points.length - 1].month}`}
       >
         {min < 0 ? (
-          <line
-            x1="0"
-            x2={width}
-            y1={zeroY}
-            y2={zeroY}
-            className="cash-zero"
-            vectorEffect="non-scaling-stroke"
-          />
+          <line x1="0" x2={WIDTH} y1={zeroY} y2={zeroY} className="cash-zero" />
         ) : null}
 
-        <polyline
-          points={line(actual, 0)}
-          className="cash-actual"
-          vectorEffect="non-scaling-stroke"
-        />
-        <polyline
-          // Starts on the last actual point so the two halves join up.
-          points={line(points.slice(Math.max(actual.length - 1, 0)), Math.max(actual.length - 1, 0))}
-          className="cash-forecast"
-          vectorEffect="non-scaling-stroke"
-        />
+        {actualCount > 1 ? (
+          <polyline points={path(points.slice(0, actualCount), 0)} className="cash-actual" />
+        ) : null}
+
+        {actualCount < points.length ? (
+          <polyline points={path(points.slice(joinAt), joinAt)} className="cash-forecast" />
+        ) : null}
 
         {points.map((point, index) =>
           point.belowZero ? (
@@ -70,7 +68,7 @@ export function CashLine({ points }: { points: CashPoint[] }) {
               key={point.month}
               cx={x(index)}
               cy={y(point.cash)}
-              r="2"
+              r="4"
               className="cash-alert"
             />
           ) : null,
@@ -79,7 +77,8 @@ export function CashLine({ points }: { points: CashPoint[] }) {
 
       <ul className="cash-scale">
         <li>
-          {points[0].month} · <span className="numo-numeric">{formatCzk(points[0].cash)}</span>
+          {points[0].month} ·{" "}
+          <span className="numo-numeric">{formatCzk(points[0].cash)}</span>
         </li>
         <li>
           {points[points.length - 1].month} ·{" "}

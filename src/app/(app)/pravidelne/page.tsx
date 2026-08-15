@@ -151,9 +151,11 @@ export default async function RecurringPage({
           <h1>Pravidelné</h1>
           <p className="page-sub">
             <MonthLabel month={month} /> ·{" "}
-            {outstanding === 0
-              ? "všechno zaplacené"
-              : `${outstanding} k zaplacení`}
+            {subs.length + monthly.length + yearly.length === 0
+              ? "zatím tu nic pravidelného není"
+              : outstanding === 0
+                ? "všechno zaplacené"
+                : `${outstanding} k zaplacení`}
           </p>
         </div>
         <MonthPicker months={months} current={month} basePath="/pravidelne" />
