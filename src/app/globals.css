@@ -1286,3 +1286,87 @@ input {
 }
 
 .big-amount { font-size: var(--numo-text-xl); }
+
+/* ----------------------------------------------------------------- import */
+
+.import { display: grid; gap: var(--numo-space-4); }
+
+.import textarea {
+  padding: var(--numo-space-2) var(--numo-space-3);
+  border: 1px solid var(--numo-border);
+  border-radius: var(--numo-radius-md);
+  background: var(--numo-surface);
+  color: var(--numo-text);
+  font: inherit;
+  font-size: var(--numo-text-sm);
+  width: 100%;
+  resize: vertical;
+}
+
+.import-tabs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--numo-space-2);
+}
+
+.import-mapping, .import-errors {
+  border: 1px solid var(--numo-border);
+  border-radius: var(--numo-radius-md);
+  padding: var(--numo-space-3);
+}
+
+.import-mapping summary, .import-errors summary {
+  cursor: pointer;
+  font-size: var(--numo-text-sm);
+}
+
+.import-mapping .crud-fields { margin-top: var(--numo-space-3); }
+
+.import-errors ul {
+  margin: var(--numo-space-2) 0 0;
+  padding-left: var(--numo-space-4);
+  color: var(--numo-text-muted);
+  font-size: var(--numo-text-xs);
+}
+
+.import-problem {
+  margin: var(--numo-space-2) 0 0;
+  color: var(--viz-critical);
+  font-size: var(--numo-text-sm);
+}
+
+.import-done {
+  margin: 0;
+  padding: var(--numo-space-3);
+  border-radius: var(--numo-radius-md);
+  background: var(--viz-seq-100);
+  font-size: var(--numo-text-sm);
+}
+
+/* Control totals get to scroll on their own; the page must not. */
+.import-totals {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--numo-text-sm);
+}
+
+.import-totals caption {
+  text-align: left;
+  padding-bottom: var(--numo-space-2);
+  color: var(--numo-text-muted);
+  font-size: var(--numo-text-xs);
+}
+
+.import-totals th, .import-totals td {
+  padding: var(--numo-space-2) var(--numo-space-3);
+  border-bottom: 1px solid var(--numo-border);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.import-totals th:first-child, .import-totals td:first-child { text-align: left; }
