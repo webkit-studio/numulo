@@ -46,7 +46,7 @@ export default async function OverviewPage({
           ) : null}
         </div>
         <MonthPicker
-          months={months}
+          months={months.all}
           current={month}
           dayNote={
             snapshot.isCurrentMonth

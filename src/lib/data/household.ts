@@ -61,20 +61,48 @@ export const getSession = cache(async (): Promise<{
   return { viewer, household: list[0] ?? null, householdCount: list.length };
 });
 
-/** Members of a household, for the "who spent it" avatars and settings. */
-export async function getMembers(householdId: string) {
+export interface Member {
+  userId: string;
+  role: "owner" | "member";
+  name: string;
+  /** First letter, for the avatar on every transaction row. */
+  initial: string;
+}
+
+/**
+ * Members of a household, for the "who spent it" avatars and for settings.
+ *
+ * Fetched as two queries rather than one embedded join: memberships.user_id
+ * references auth.users, not profiles, so PostgREST has no relationship to
+ * infer and the embed silently returns nothing.
+ */
+export async function getMembers(householdId: string): Promise<Member[]> {
   const supabase = await createClient();
-  const { data } = await supabase
+
+  const { data: rows } = await supabase
     .from("memberships")
-    .select("user_id, role, profiles(display_name)")
+    .select("user_id, role")
     .eq("household_id", householdId);
 
-  return (data ?? []).map((row) => {
-    const profile = row.profiles as unknown as { display_name: string } | null;
+  const ids = (rows ?? []).map((row) => row.user_id as string);
+  if (ids.length === 0) return [];
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, display_name")
+    .in("id", ids);
+
+  const names = new Map(
+    (profiles ?? []).map((row) => [row.id as string, row.display_name as string]),
+  );
+
+  return (rows ?? []).map((row) => {
+    const name = names.get(row.user_id as string) ?? "Člen";
     return {
       userId: row.user_id as string,
       role: row.role as "owner" | "member",
-      name: profile?.display_name ?? "Člen",
+      name,
+      initial: name.slice(0, 1).toUpperCase(),
     };
   });
 }

@@ -13,10 +13,17 @@ export function todayIso(): string {
  * index a to_char() expression without an immutable wrapper, and a household's
  * history is small enough that the round trip is cheaper than the machinery.
  */
+export interface MonthOptions {
+  /** Every month the picker offers, newest first. */
+  all: IsoMonth[];
+  /** The newest month that actually has transactions. */
+  newestWithData: IsoMonth | null;
+}
+
 export async function getMonthsWithData(
   householdId: string,
   today: string,
-): Promise<IsoMonth[]> {
+): Promise<MonthOptions> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("transactions")
@@ -24,20 +31,30 @@ export async function getMonthsWithData(
     .eq("household_id", householdId)
     .order("date", { ascending: false });
 
-  const months = new Set((data ?? []).map((row) => monthOf(row.date as string)));
-  // The current month is always offered, even before anything lands in it —
-  // otherwise the picker vanishes on the 1st.
-  months.add(monthOf(today));
+  const withData = [...new Set((data ?? []).map((row) => monthOf(row.date as string)))]
+    .sort()
+    .reverse();
 
-  return [...months].sort().reverse();
+  // The current month is always offered even before anything lands in it,
+  // otherwise the picker disappears on the 1st of the month.
+  const all = [...new Set([monthOf(today), ...withData])].sort().reverse();
+
+  return { all, newestWithData: withData[0] ?? null };
 }
 
-/** The requested month if the household has it, else the newest one. */
+/**
+ * Which month to show.
+ *
+ * Defaults to the newest month that has data rather than to today. Opening on
+ * an empty current month shows a screen full of zeroes that look like a
+ * household which stopped spending, when really the statement simply has not
+ * been imported yet.
+ */
 export function resolveMonth(
   requested: string | string[] | undefined,
-  months: IsoMonth[],
+  months: MonthOptions,
   today: string,
 ): IsoMonth {
-  if (typeof requested === "string" && months.includes(requested)) return requested;
-  return months[0] ?? monthOf(today);
+  if (typeof requested === "string" && months.all.includes(requested)) return requested;
+  return months.newestWithData ?? monthOf(today);
 }
