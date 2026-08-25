@@ -1,0 +1,10 @@
+:root{
+--font-display:'Sora',sans-serif;
+--font-ui:'Instrument Sans',sans-serif;
+--font-mono:'IBM Plex Mono',monospace;
+/* scale — density 7: compact UI */
+--text-2xs:11px;--text-xs:12px;--text-sm:13px;--text-body:14px;--text-md:15px;--text-lg:17px;--text-xl:20px;--text-2xl:24px;--text-3xl:30px;--text-4xl:38px;
+--leading-tight:1.15;--leading-snug:1.3;--leading-normal:1.5;
+--weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:700;--weight-heavy:800;
+--tracking-caps:.12em;
+}
