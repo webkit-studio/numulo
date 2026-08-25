@@ -399,9 +399,17 @@ export function cashOverTime(input: CashOverTimeInput): CashPoint[] {
 
 /* ───────────────────────────────────────────────────────── průměry ────── */
 
-/** Mean of the values present. Absent months are skipped, never counted as 0. */
-export function average(values: readonly number[]): number {
-  const present = values.filter((value) => Number.isFinite(value));
+/**
+ * Mean of the values present. Absent months are skipped, never counted as 0.
+ *
+ * The distinction matters more than it sounds: a household with one imported
+ * month divided by six would read "+500 % proti průměru" on every category,
+ * which says nothing except that five months are missing. `null` is how a
+ * caller says "we have no statement for this month" — as opposed to `0`,
+ * which says "we genuinely spent nothing".
+ */
+export function average(values: readonly (number | null)[]): number {
+  const present = values.filter((value): value is number => value !== null && Number.isFinite(value));
   if (present.length === 0) return 0;
   return Math.round(present.reduce((sum, value) => sum + value, 0) / present.length);
 }

@@ -5,12 +5,12 @@ import { useFormStatus } from "react-dom";
 /** Knows it is submitting without the page having to track it. */
 export function SubmitButton({
   children,
-  pendingLabel,
+  pendingLabel = "…",
   disabled,
   className = "btn btn-primary",
 }: {
   children: React.ReactNode;
-  pendingLabel: string;
+  pendingLabel?: string;
   disabled?: boolean;
   className?: string;
 }) {

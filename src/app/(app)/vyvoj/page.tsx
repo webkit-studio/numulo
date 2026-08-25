@@ -1,12 +1,120 @@
+import type { Metadata } from "next";
+import { Cashflow } from "@/components/charts/cashflow";
+import { CashCurve } from "@/components/charts/cash-curve";
+import { Sparkline } from "@/components/charts/sparkline";
+import { Money } from "@/components/money";
+import { getSession } from "@/lib/data/household";
+import { getMonthsWithData, resolveMonth, todayIso } from "@/lib/data/months";
+import { getTrends } from "@/lib/data/trends";
+import { monthNameOnly } from "@/lib/date";
+
+export const metadata: Metadata = { title: "Numulo — vývoj" };
 export const dynamic = "force-dynamic";
 
-export default function Page() {
+export default async function TrendsPage() {
+  const { household } = await getSession();
+  if (!household) return null;
+
+  const today = todayIso();
+  const months = await getMonthsWithData(household.id, today);
+  const month = resolveMonth(undefined, months, today);
+  const trends = await getTrends(household, month);
+
+  const nothingYet = trends.averages.length === 0 && trends.cashflow.every((p) => p.income === 0);
+
   return (
-    <header className="page-head">
-      <div>
-        <h1 className="page-title">vyvoj</h1>
-        <p className="page-sub">staví se</p>
-      </div>
-    </header>
+    <>
+      <header className="page-head">
+        <div>
+          <h1 className="page-title">Vývoj</h1>
+          <p className="page-sub">skutečnost zeleně · předpověď okrově</p>
+        </div>
+      </header>
+
+      {nothingYet ? (
+        <section className="card">
+          <p className="empty">
+            Na vývoj je potřeba pár měsíců historie. Naimportuj výpisy a graf se
+            tu objeví sám.
+          </p>
+        </section>
+      ) : null}
+
+      {/* ── Cashflow ────────────────────────────────────────────────── */}
+      <section className="card">
+        <div className="card-head">
+          <h2 className="card-title">Cashflow</h2>
+          <span className="card-sub">kolik měsíc vydělal — příjmy minus výdaje</span>
+        </div>
+        <Cashflow points={trends.cashflow} />
+      </section>
+
+      {/* ── Hotovost v čase ─────────────────────────────────────────── */}
+      <section className="card">
+        <div className="card-head">
+          <h2 className="card-title">Hotovost v čase</h2>
+          <span className="card-sub">kolik je na účtech</span>
+        </div>
+
+        {trends.firstNegative ? (
+          <p className="chart-warning">
+            v {monthNameOnly(trends.firstNegative)} hrozí, že hotovost nevyjde
+          </p>
+        ) : null}
+
+        <CashCurve points={trends.cash} cashToday={trends.cashToday} />
+      </section>
+
+      {/* ── Trendy kategorií ────────────────────────────────────────── */}
+      {trends.trends.length > 0 ? (
+        <section className="card">
+          <div className="card-head">
+            <h2 className="card-title">Trendy kategorií</h2>
+            <span className="card-sub">posledních šest měsíců</span>
+          </div>
+
+          <ul className="trends">
+            {trends.trends.map((trend) => (
+              <li key={trend.id} className="trend">
+                <span className="trend-name">
+                  <span className="dot" style={{ background: trend.color }} aria-hidden="true" />
+                  {trend.name}
+                </span>
+                <Sparkline series={trend.series} color={trend.color} />
+                <span className="trend-figures">
+                  <span className="trend-latest"><Money value={trend.latest} tone="plain" /></span>
+                  <span className={`trend-delta ${trend.percent > 0 ? "up" : "down"}`}>
+                    {trend.percent > 0 ? "+" : trend.percent < 0 ? "−" : ""}
+                    {Math.abs(trend.percent)} % proti průměru
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* ── Průměry ─────────────────────────────────────────────────── */}
+      {trends.averages.length > 0 ? (
+        <section className="card">
+          <div className="card-head">
+            <h2 className="card-title">Průměry</h2>
+            <span className="card-sub">Kč/měs za posledních šest měsíců</span>
+          </div>
+
+          <ul className="averages">
+            {trends.averages.map((item) => (
+              <li key={item.name}>
+                <span className="average-name">
+                  <span className="dot" style={{ background: item.color }} aria-hidden="true" />
+                  {item.name}
+                </span>
+                <span className="average-value"><Money value={item.mean} tone="plain" /></span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </>
   );
 }

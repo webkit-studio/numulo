@@ -57,7 +57,7 @@ export default async function OverviewPage({
       </header>
 
       {/* ── Bilance ─────────────────────────────────────────────────── */}
-      <section className="card">
+      <section className="card sec-balance">
         <div className="card-head"><h2 className="card-title">Bilance</h2></div>
 
         <div className="balance">
@@ -94,7 +94,7 @@ export default async function OverviewPage({
             <p className="tile-note">celková pozice</p>
           </div>
 
-          <div className="tile-hero span-2">
+          <div className="tile-hero span-2 desktop-only">
             <span className="tile-label">zbývá na útratu</span>
             <p className="hero-value">
               <Money value={snapshot.remaining} tone={snapshot.remaining < 0 ? "auto" : "positive"} />
@@ -109,7 +109,7 @@ export default async function OverviewPage({
       </section>
 
       {/* ── Denní limit ─────────────────────────────────────────────── */}
-      <section className="card">
+      <section className="card sec-limit">
         <div className="card-head">
           <h2 className="card-title">
             Denní limit{" "}
@@ -121,12 +121,22 @@ export default async function OverviewPage({
           </h2>
         </div>
 
+        {/* Phone only: the figure this whole card is about, above the card
+            that divides it. On a desktop it lives in the Bilance grid. */}
+        <div className="hero-remaining mobile-only">
+          <span className="tile-label">zbývá na útratu</span>
+          <p className="hero-value hero-big">
+            <Money value={snapshot.remaining} tone={snapshot.remaining < 0 ? "auto" : "positive"} />
+          </p>
+        </div>
+
         {limit.daysLeft === 0 ? (
           <p className="empty">
             Měsíc skončil. Průměrně jste utráceli <Money value={limit.pace} tone="plain" /> denně.
           </p>
         ) : (
           <>
+            <span className="tile-label mobile-only">denní limit</span>
             <p className="limit-value"><Money value={limit.perDay} tone="plain" /></p>
             <p className={`limit-projection ${limit.projection < 0 ? "warn" : "pos"}`}>
               tímhle tempem skončíš <Money value={limit.projection} tone="plain" />{" "}
@@ -141,7 +151,7 @@ export default async function OverviewPage({
       </section>
 
       {/* ── Obálky ──────────────────────────────────────────────────── */}
-      <section className="card">
+      <section className="card sec-envelopes">
         <div className="card-head">
           <h2 className="card-title">Obálky</h2>
           <Link href="/plan" className="card-link">spravovat rozpočty ›</Link>
@@ -150,7 +160,7 @@ export default async function OverviewPage({
       </section>
 
       {/* ── Útraty podle dnů ────────────────────────────────────────── */}
-      <section className="card">
+      <section className="card sec-heat">
         <div className="card-head"><h2 className="card-title">Útraty podle dnů</h2></div>
         <Heatmap
           days={snapshot.daily}
@@ -161,7 +171,7 @@ export default async function OverviewPage({
       </section>
 
       {/* ── Poslední transakce ──────────────────────────────────────── */}
-      <section className="card">
+      <section className="card sec-transactions">
         <div className="card-head">
           <h2 className="card-title">Poslední transakce</h2>
           <Link href="/transakce" className="card-link">všechny ›</Link>

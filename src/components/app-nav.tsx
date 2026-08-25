@@ -25,6 +25,7 @@ const GROUPS = [
     items: [
       { href: "/transakce", text: "Transakce" },
       { href: "/import", text: "Import" },
+      { href: "/zapsat", text: "Zapsat výdaj" },
     ],
   },
 ];

@@ -323,10 +323,11 @@ export async function getMonthSnapshot(
     spent: dailyMap.get(index + 1) ?? 0,
   }));
 
-  const dueItems = monthlyItems.length + subscriptions.length;
-  const paidCount =
-    monthlyItems.filter((row) => paid.has(`monthly:${row.id}`)).length +
-    subscriptions.filter((row) => paid.has(`subscription:${row.id}`)).length;
+  // "povinnosti 6/8" counts the monthly payments. Subscriptions are inside
+  // the amount but not the count — nobody ticks Spotify off a list, and
+  // mixing them in would make the ratio unrecognisable next month.
+  const dueItems = monthlyItems.length;
+  const paidCount = monthlyItems.filter((row) => paid.has(`monthly:${row.id}`)).length;
 
   return {
     month,

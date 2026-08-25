@@ -47,12 +47,16 @@ const PATTERNS: { field: keyof ColumnMap; words: string[] }[] = [
   // "datum splatnosti" is deliberately absent: on a statement that is a
   // standing order's due date, not the day the money moved.
   { field: "date", words: ["datum uskutecneni", "datum zauctovani", "datum provedeni", "completed date", "started date", "datum", "date"] },
-  { field: "amount", words: ["castka celkem", "castka v mene uctu", "castka", "amount", "suma", "hodnota"] },
+  // "objem" is Fio's word for the signed amount, "obrat" is ČSOB's.
+  { field: "amount", words: ["castka celkem", "castka v mene uctu", "castka", "objem", "obrat", "amount", "suma", "hodnota"] },
   { field: "debit", words: ["vydaj", "debet", "ma dati", "paid out", "withdrawal"] },
   { field: "credit", words: ["prijem", "kredit", "dal", "paid in", "deposit"] },
   { field: "currency", words: ["mena", "currency"] },
-  { field: "description", words: ["popis", "poznamka", "zprava pro prijemce", "detail", "description", "nazev protiuctu", "reference"] },
-  { field: "counterparty", words: ["protistrana", "nazev protistrany", "prijemce", "obchodnik", "merchant", "payee", "beneficiary"] },
+  { field: "description", words: ["popis", "poznamka", "zprava pro prijemce", "detail", "description", "reference", "upresneni"] },
+  // "nazev protiuctu" belongs here, not with description: it names the other
+  // side of the payment, which is exactly what a merchant is. Leaving it on
+  // description let it claim the column first and the merchant came out blank.
+  { field: "counterparty", words: ["nazev protiuctu", "protistrana", "nazev protistrany", "prijemce", "obchodnik", "merchant", "payee", "beneficiary"] },
   { field: "counterAccount", words: ["protiucet", "cislo protiuctu", "ucet protistrany", "counter account", "iban"] },
   { field: "vs", words: ["variabilni symbol", "vs", "variable symbol"] },
   { field: "card", words: ["cislo karty", "karta", "card number", "drzitel karty", "card"] },

@@ -51,12 +51,24 @@ export function formatCzk(halere: number, options: FormatOptions = {}): string {
   return `${prefix}${body}${options.unit === false ? "" : `${NARROW_NBSP}Kč`}`;
 }
 
-/** "12 k" for chart axis labels. */
+/**
+ * "12 k" for chart axis labels — "2,5 k" when the step is a half.
+ *
+ * The nice-step series the axes draw from contains 2 500 and 12 500, so
+ * rounding to whole thousands would label two different gridlines "3 k" and
+ * make the axis unreadable.
+ */
 export function formatCompact(halere: number): string {
   const czk = Math.round(halereToCzk(halere));
   if (czk === 0) return "0";
-  const thousands = Math.round(czk / 1000);
-  return `${czk < 0 ? MINUS : ""}${Math.abs(thousands)}${NARROW_NBSP}k`;
+
+  const thousands = Math.abs(czk) / 1000;
+  const body =
+    thousands >= 10 || Number.isInteger(thousands)
+      ? String(Math.round(thousands))
+      : thousands.toFixed(1).replace(".", ",").replace(",0", "");
+
+  return `${czk < 0 ? MINUS : ""}${body}${NARROW_NBSP}k`;
 }
 
 /**
