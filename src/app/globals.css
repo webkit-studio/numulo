@@ -1684,3 +1684,6 @@ button.envelope-action {
    sibling — a row of boxes at three different heights reads as a mistake. */
 .form-grid { align-items: start; }
 .form-grid .field { align-content: start; }
+
+.goal-unset a { font-size: var(--text-xs); color: var(--green); text-decoration: none; }
+.goal-unset a:hover { text-decoration: underline; }

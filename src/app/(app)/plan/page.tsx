@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { CrudList, type CrudRow } from "@/components/crud-list";
 import { Money } from "@/components/money";
@@ -113,13 +114,24 @@ export default async function PlanPage({
               <dd><Money value={goal.onTheWay} tone="plain" /></dd>
             </div>
             <div className="goal-row is-total">
-              <dt>{goal.covered ? "nad cíl" : "schází"}</dt>
-              <dd>
-                <Money
-                  value={goal.covered ? goal.extra : goal.missing}
-                  tone={goal.covered ? "positive" : "auto"}
-                />
-              </dd>
+              {goal.needed === 0 ? (
+                <>
+                  <dt>schází</dt>
+                  <dd className="goal-unset">
+                    <Link href="/nastaveni">nastav měsíční rozpočet ›</Link>
+                  </dd>
+                </>
+              ) : (
+                <>
+                  <dt>{goal.covered ? "nad cíl" : "schází"}</dt>
+                  <dd>
+                    <Money
+                      value={goal.covered ? goal.extra : goal.missing}
+                      tone={goal.covered ? "positive" : "auto"}
+                    />
+                  </dd>
+                </>
+              )}
             </div>
           </dl>
 

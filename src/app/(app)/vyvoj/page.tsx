@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { Cashflow } from "@/components/charts/cashflow";
 import { CashCurve } from "@/components/charts/cash-curve";
@@ -20,7 +21,35 @@ export default async function TrendsPage() {
   const month = resolveMonth(undefined, months, today);
   const trends = await getTrends(household, month);
 
-  const nothingYet = trends.averages.length === 0 && trends.cashflow.every((p) => p.income === 0);
+  // Nothing to plot is not the same as a month that came out at zero. Drawing
+  // two flat lines through 0 · 0 · 0 · 0 under a note saying there is no data
+  // is worse than drawing nothing: it looks like an answer.
+  const nothingYet = trends.months.length === 0;
+
+  if (nothingYet) {
+    return (
+      <>
+        <header className="page-head">
+          <div>
+            <h1 className="page-title">Vývoj</h1>
+            <p className="page-sub">jak se to vyvíjí a kam to směřuje</p>
+          </div>
+        </header>
+
+        <section className="card">
+          <div className="empty-block">
+            <p className="empty-title">Zatím není co srovnávat</p>
+            <p className="empty-body">
+              Vývoj potřebuje aspoň dva měsíce historie — pak se tu objeví
+              cashflow, křivka hotovosti a trendy kategorií. Naimportuj výpisy
+              a graf se nakreslí sám.
+            </p>
+            <Link href="/import" className="btn btn-primary">Nahrát výpis</Link>
+          </div>
+        </section>
+      </>
+    );
+  }
 
   return (
     <>
@@ -30,15 +59,6 @@ export default async function TrendsPage() {
           <p className="page-sub">skutečnost zeleně · předpověď okrově</p>
         </div>
       </header>
-
-      {nothingYet ? (
-        <section className="card">
-          <p className="empty">
-            Na vývoj je potřeba pár měsíců historie. Naimportuj výpisy a graf se
-            tu objeví sám.
-          </p>
-        </section>
-      ) : null}
 
       {/* ── Cashflow ────────────────────────────────────────────────── */}
       <section className="card">
