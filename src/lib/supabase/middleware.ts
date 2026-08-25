@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { sessionCookieOptions } from "./cookies";
 
 /**
  * Refreshes the auth session on every request and decides who may pass.
@@ -21,7 +22,7 @@ export async function updateSession(request: NextRequest) {
           for (const { name, value } of toSet) request.cookies.set(name, value);
           response = NextResponse.next({ request });
           for (const { name, value, options } of toSet) {
-            response.cookies.set(name, value, options);
+            response.cookies.set(name, value, sessionCookieOptions(options));
           }
         },
       },

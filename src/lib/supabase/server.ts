@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { sessionCookieOptions } from "./cookies";
 
 /**
  * Supabase in a Server Component or Server Action.
@@ -20,7 +21,7 @@ export async function createClient() {
         setAll: (toSet) => {
           try {
             for (const { name, value, options } of toSet) {
-              cookieStore.set(name, value, options);
+              cookieStore.set(name, value, sessionCookieOptions(options));
             }
           } catch {
             // Called from a Server Component. The middleware already refreshed
