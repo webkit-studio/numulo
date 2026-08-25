@@ -1,79 +1,76 @@
-import type { DaySpend } from "@/lib/data/queries";
 import { formatCzk } from "@/lib/money";
+import { daysInMonth } from "@/lib/date";
 
 /**
- * Calendar heatmap of daily household spending.
+ * Spending by day.
  *
- * Sequential encoding, so one hue light→dark (the blue ramp) — never a rainbow.
- * The lightest step means "near zero" and is allowed to recede toward the
- * surface. Magnitude is also carried in the tooltip text, so the colour is
- * never the only way to read a day.
+ * One hue in five steps, light to dark — magnitude is ordered, so the colour
+ * must be too. Days still to come get a dashed outline rather than a shade,
+ * because an empty future day is not a day you spent nothing on.
  */
+const STEPS = ["#CFE3D5", "#A8CBB4", "#74AC8C", "#45906A", "#1C6B4A"];
 
-const STEPS = [
-  "var(--viz-seq-100)",
-  "var(--viz-seq-200)",
-  "var(--viz-seq-300)",
-  "var(--viz-seq-450)",
-  "var(--viz-seq-600)",
-];
+export function Heatmap({
+  days,
+  month,
+  today,
+  isCurrentMonth,
+}: {
+  days: { day: number; spent: number }[];
+  month: string;
+  today: number;
+  isCurrentMonth: boolean;
+}) {
+  const peak = days.reduce((max, day) => Math.max(max, day.spent), 0);
 
-function stepFor(spent: number, max: number): string {
-  if (spent <= 0) return "var(--viz-empty)";
-  if (max <= 0) return STEPS[0];
-  // Rank by share of the month's busiest day; the top step is reserved for it.
-  const ratio = spent / max;
-  const index = Math.min(STEPS.length - 1, Math.floor(ratio * STEPS.length));
-  return STEPS[index];
-}
-
-const WEEKDAYS = ["po", "út", "st", "čt", "pá", "so", "ne"];
-
-export function Heatmap({ days, month }: { days: DaySpend[]; month: string }) {
-  const max = days.reduce((peak, day) => Math.max(peak, day.spent), 0);
-
-  // ISO weekday of the 1st, so the grid starts on the right column.
+  // ISO weekday of the 1st, so the grid starts under the right column.
   const first = new Date(`${month}-01T00:00:00Z`).getUTCDay();
   const offset = (first + 6) % 7;
+  const total = daysInMonth(month);
 
   return (
     <div className="heatmap">
-      <div className="heatmap-grid" role="grid" aria-label="Útraty po dnech">
-        {WEEKDAYS.map((label) => (
-          <span key={label} className="heatmap-weekday" aria-hidden="true">
-            {label}
-          </span>
+      <div className="heat-grid" role="grid" aria-label="Útraty po dnech">
+        {["po", "út", "st", "čt", "pá", "so", "ne"].map((label) => (
+          <span key={label} className="heat-weekday" aria-hidden="true">{label}</span>
         ))}
 
-        {Array.from({ length: offset }, (_, index) => (
-          <span key={`pad-${index}`} className="heatmap-pad" />
+        {Array.from({ length: offset }, (_, i) => (
+          <span key={`pad-${i}`} className="heat-pad" />
         ))}
 
-        {days.map((day) => (
-          <span
-            key={day.date}
-            className="heatmap-cell"
-            style={{ background: stepFor(day.spent, max) }}
-            title={`${day.day}. — ${day.spent > 0 ? formatCzk(day.spent) : "nic"}`}
-          >
-            <span className="heatmap-day">{day.day}</span>
-          </span>
-        ))}
+        {Array.from({ length: total }, (_, index) => {
+          const day = index + 1;
+          const spent = days.find((d) => d.day === day)?.spent ?? 0;
+          const future = isCurrentMonth && day > today;
+
+          return (
+            <span
+              key={day}
+              className={`heat-cell${future ? " is-future" : ""}`}
+              style={future ? undefined : { background: shade(spent, peak) }}
+              title={`${day}. — ${spent > 0 ? formatCzk(spent) : "nic"}`}
+            >
+              <span className="heat-day">{day}</span>
+            </span>
+          );
+        })}
       </div>
 
-      <div className="heatmap-legend">
-        <span>nic</span>
+      <p className="heat-legend">
+        <span>méně</span>
         {STEPS.map((step) => (
-          <span
-            key={step}
-            className="heatmap-swatch"
-            style={{ background: step }}
-          />
+          <span key={step} className="heat-swatch" style={{ background: step }} />
         ))}
-        <span>
-          nejvíc {max > 0 ? formatCzk(max) : "—"}
-        </span>
-      </div>
+        <span>více</span>
+      </p>
     </div>
   );
+}
+
+function shade(spent: number, peak: number): string {
+  if (spent <= 0) return "rgba(14,62,46,.05)";
+  if (peak <= 0) return STEPS[0];
+  const index = Math.min(STEPS.length - 1, Math.floor((spent / peak) * STEPS.length));
+  return STEPS[index];
 }

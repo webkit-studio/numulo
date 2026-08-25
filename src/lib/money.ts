@@ -1,9 +1,14 @@
 /**
- * Money is an integer number of haléře everywhere in numo. These helpers are
- * the only place where the ×100 conversion is allowed to happen.
+ * Money is an integer number of haléře everywhere in Numulo. These helpers are
+ * the only place the ×100 conversion is allowed to happen.
  */
 
 export const HALERE_PER_CZK = 100;
+
+/** U+202F. The spec asks for a narrow no-break space between thousands. */
+const NARROW_NBSP = " ";
+/** U+2212. A real minus sign, not a hyphen — it aligns with the digits. */
+const MINUS = "−";
 
 export function czkToHalere(czk: number): number {
   return Math.round(czk * HALERE_PER_CZK);
@@ -13,41 +18,56 @@ export function halereToCzk(halere: number): number {
   return halere / HALERE_PER_CZK;
 }
 
-const wholeCzkFormatter = new Intl.NumberFormat("cs-CZ", {
-  maximumFractionDigits: 0,
-});
+/**
+ * "12 345" with narrow no-break spaces, no decimals.
+ *
+ * Intl gives cs-CZ a regular no-break space (U+00A0); the design calls for the
+ * narrow one, so it is substituted here rather than hand-rolling the grouping.
+ */
+export function formatNumber(czk: number): string {
+  return new Intl.NumberFormat("cs-CZ", { maximumFractionDigits: 0 })
+    .format(Math.abs(czk))
+    .replace(/[\s  ]/g, NARROW_NBSP);
+}
 
-const preciseCzkFormatter = new Intl.NumberFormat("cs-CZ", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+export interface FormatOptions {
+  /** Show a leading + for positives — used in the charts. */
+  sign?: boolean;
+  /** Append " Kč". Off where the unit is rendered as its own element. */
+  unit?: boolean;
+}
 
 /**
- * "63 000 Kč". Rounds to whole crowns — haléře are noise in every household
- * number numo shows. Pass `precise` where the exact amount matters (import
- * review, transaction detail).
+ * The single money formatter. Takes haléře, returns what the UI shows.
+ *
+ * Rounds to whole crowns: haléře are noise in every number Numulo displays,
+ * and a stray "12 345,67" would break the mono column alignment the design
+ * relies on.
  */
-export function formatCzk(
-  halere: number,
-  options: { precise?: boolean; sign?: boolean } = {},
-): string {
-  const czk = halereToCzk(halere);
-  const formatter = options.precise ? preciseCzkFormatter : wholeCzkFormatter;
-  const body = formatter.format(Math.abs(czk));
-  const sign = halere < 0 ? "−" : options.sign ? "+" : "";
-  // U+00A0 keeps "63 000 Kč" from wrapping between number and unit.
-  return `${sign}${body} Kč`;
+export function formatCzk(halere: number, options: FormatOptions = {}): string {
+  const czk = Math.round(halereToCzk(halere));
+  const body = formatNumber(czk);
+  const prefix = czk < 0 ? MINUS : options.sign && czk > 0 ? "+" : "";
+  return `${prefix}${body}${options.unit === false ? "" : `${NARROW_NBSP}Kč`}`;
+}
+
+/** "12 k" for chart axis labels. */
+export function formatCompact(halere: number): string {
+  const czk = Math.round(halereToCzk(halere));
+  if (czk === 0) return "0";
+  const thousands = Math.round(czk / 1000);
+  return `${czk < 0 ? MINUS : ""}${Math.abs(thousands)}${NARROW_NBSP}k`;
 }
 
 /**
  * Parses Czech-formatted amounts from CSV exports: decimal comma, spaces
- * (including non-breaking and narrow no-break) as thousands separators.
- * Returns haléře, or null when the input isn't a number.
+ * (regular, narrow and non-breaking) as thousands separators.
+ * Returns haléře, or null when the input is not a number.
  */
 export function parseCzkAmount(input: string): number | null {
   const cleaned = input
-    .replace(/[\s  ]/g, "")
-    .replace(/−/g, "-") // U+2212 MINUS SIGN
+    .replace(/[\s   ]/g, "")
+    .replace(/−/g, "-")
     .replace(",", ".")
     .trim();
   if (cleaned === "" || !/^-?\d+(\.\d+)?$/.test(cleaned)) return null;

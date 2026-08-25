@@ -1,82 +1,78 @@
 import Link from "next/link";
-import type { Envelope } from "@/lib/data/queries";
-import { formatCzk } from "@/lib/money";
+import type { CategorySpend } from "@/lib/data/month";
+import { Money } from "./money";
 
 /**
- * Envelopes. A category with a limit shows what is left and a two-segment bar
- * (spent | remaining) with a 2px surface gap between the segments; one without
- * shows what was spent and an invitation to set a limit.
+ * Envelopes: a category, its ceiling, and how much room is left.
  *
- * The state is spelled out in words next to the bar, so "over budget" is never
- * carried by colour alone.
+ * State is always a word next to the bar — "v klidu / dochází / nad plánem" —
+ * never the colour on its own. An overflowing envelope shows the overspend as
+ * a second red segment and says where it is covered from, because a bar that
+ * simply stops at 100 % hides exactly the number that matters.
  */
-export function Envelopes({ envelopes }: { envelopes: Envelope[] }) {
-  const withActivity = envelopes.filter(
-    (envelope) => envelope.spent > 0 || envelope.limit !== null,
+export function Envelopes({ categories }: { categories: CategorySpend[] }) {
+  const shown = categories.filter(
+    (category) => category.inEnvelopes && (category.spent > 0 || category.monthlyLimit !== null),
   );
 
-  if (withActivity.length === 0) {
+  if (shown.length === 0) {
     return (
-      <p className="empty-note">
-        Zatím tu není co rozdělit — v tomhle měsíci nejsou žádné útraty
-        s kategorií.
+      <p className="empty">
+        Zatím není co rozdělovat — jakmile budou útraty s kategorií, objeví se tu obálky.
       </p>
     );
   }
 
   return (
     <ul className="envelopes">
-      {withActivity.map((envelope) => {
-        const over = envelope.remaining !== null && envelope.remaining < 0;
-        const share =
-          envelope.limit && envelope.limit > 0
-            ? Math.min(100, (envelope.spent / envelope.limit) * 100)
-            : 0;
+      {shown.map((category) => {
+        const { envelope } = category;
 
         return (
-          <li key={envelope.id} className="envelope">
+          <li key={category.id} className="envelope">
             <div className="envelope-head">
               <span className="envelope-name">
-                <span
-                  className="envelope-dot"
-                  style={{ background: envelope.color }}
-                  aria-hidden="true"
-                />
-                {envelope.name}
+                <span className="dot" style={{ background: category.color }} aria-hidden="true" />
+                {category.name}
+                {envelope.state ? (
+                  <span className={`envelope-state state-${stateClass(envelope.state)}`}>
+                    {envelope.state}
+                  </span>
+                ) : null}
               </span>
 
               {envelope.limit === null ? (
-                <span className="envelope-value">
-                  <span className="numo-numeric">
-                    {formatCzk(envelope.spent)}
-                  </span>
-                  <Link href="/plan" className="envelope-action">
-                    nastavit limit ›
-                  </Link>
-                </span>
+                <Link href="/plan" className="envelope-action">nastavit limit ›</Link>
               ) : (
-                <span className="envelope-value">
-                  <span className="numo-numeric">
-                    {formatCzk(Math.abs(envelope.remaining ?? 0))}
-                  </span>
-                  <span className="envelope-state">
-                    {over ? "přes limit" : "zbývá"}
-                  </span>
+                <span className="envelope-remaining">
+                  zbývá <Money value={envelope.remaining ?? 0} />
                 </span>
               )}
             </div>
 
-            {envelope.limit === null ? null : (
-              <div
-                className="envelope-bar"
-                role="img"
-                aria-label={`${envelope.name}: utraceno ${formatCzk(envelope.spent)} z ${formatCzk(envelope.limit)}`}
-              >
-                <span
-                  className={`envelope-fill${over ? " is-over" : ""}`}
-                  style={{ width: `${share}%`, background: envelope.color }}
-                />
-              </div>
+            {envelope.limit === null ? (
+              <p className="envelope-note">
+                utraceno <Money value={category.spent} tone="plain" />
+              </p>
+            ) : (
+              <>
+                <div className="bar">
+                  <span
+                    className="bar-fill"
+                    style={{ width: `${envelope.fillPercent}%` }}
+                  />
+                  {envelope.overPercent > 0 ? (
+                    <span className="bar-over" style={{ width: `${envelope.overPercent}%` }} />
+                  ) : null}
+                </div>
+                <p className="envelope-note">
+                  utraceno <Money value={category.spent} tone="plain" /> z limitu{" "}
+                  <Money value={envelope.limit} tone="plain" />
+                  {envelope.remaining !== null && envelope.remaining < 0
+                    ? " · kryto z rezervy"
+                    : ""}
+                </p>
+              </>
             )}
           </li>
         );
@@ -84,3 +80,6 @@ export function Envelopes({ envelopes }: { envelopes: Envelope[] }) {
     </ul>
   );
 }
+
+const stateClass = (state: string) =>
+  state === "v klidu" ? "calm" : state === "dochází" ? "low" : "over";
