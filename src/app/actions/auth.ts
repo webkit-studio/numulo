@@ -171,3 +171,33 @@ export async function joinHousehold(
 
   redirect("/");
 }
+
+/**
+ * Changing your own password while signed in.
+ *
+ * Deliberately not routed through e-mail: the reset link exists for someone
+ * locked out, and using it for a routine change means the whole operation
+ * depends on a mailer that is rate-limited to a couple of messages an hour.
+ * A person who is already signed in has proved who they are.
+ */
+export async function changePassword(
+  _prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  const password = String(form.get("password") ?? "");
+  const again = String(form.get("passwordAgain") ?? "");
+
+  if (password.length < 8) return { error: "Heslo musí mít aspoň 8 znaků." };
+  if (password !== again) return { error: "Hesla se neshodují." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Nejsi přihlášený." };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: czechAuthError(error.message) };
+
+  return { error: null, notice: "Heslo změněno." };
+}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getMembers, getSession } from "@/lib/data/household";
 import { SettingsForm } from "./settings-form";
 import { JoinCode } from "./join-code";
+import { ChangePassword } from "./change-password";
 import { halereToCzk } from "@/lib/money";
 
 export const metadata: Metadata = { title: "Numulo — nastavení účtu" };
@@ -66,6 +67,17 @@ export default async function SettingsPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2 className="card-title">Přihlášení</h2>
+          <p className="card-sub">
+            Heslo se dá změnit tady, bez e-mailu. Odkaz na obnovu je pro toho,
+            kdo se dovnitř nedostane vůbec.
+          </p>
+        </div>
+        <ChangePassword email={viewer.email} />
       </section>
     </>
   );

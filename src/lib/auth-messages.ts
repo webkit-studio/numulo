@@ -23,6 +23,16 @@ export function czechAuthError(message: string): string {
   ) {
     return "Tenhle e-mail nejde použít. Zkontroluj ho, nebo zkus jiný.";
   }
+  // Supabase's built-in mailer sends a couple of messages an hour and then
+  // refuses. Saying "moc pokusů" sends people back to try the same thing
+  // again; the honest answer is that it is the e-mail, and roughly how long.
+  if (text.includes("email rate limit") || text.includes("over_email_send_rate_limit")) {
+    return (
+      "Došel limit odchozích e-mailů — Supabase jich posílá jen pár za hodinu. " +
+      "Zkus to za hodinu, nebo v Supabase vypni potvrzování e-mailu " +
+      "(Authentication → Sign In / Providers → Email → Confirm email)."
+    );
+  }
   if (text.includes("rate limit") || text.includes("too many")) {
     return "Moc pokusů po sobě. Dej tomu chvilku.";
   }
