@@ -26,7 +26,7 @@ export default async function SettingsPage() {
         <div className="card-head">
           <h2 className="card-title">Účet</h2>
           <p className="card-sub">
-            Rozpočet je strop útrat domácnosti — není to výplata ani převod peněz.
+            Rozpočet je strop útrat domácnosti — kolik za měsíc smí odejít, ne kolik přijde.
             Počáteční stav říká Rezervě, odkud začít počítat.
           </p>
         </div>
