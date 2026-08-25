@@ -1,35 +1,28 @@
 import type { Metadata, Viewport } from "next";
+import { IBM_Plex_Mono, Instrument_Sans, Sora } from "next/font/google";
 import "./globals.css";
 
-const BASE = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/+$/, "");
+const sora = Sora({ subsets: ["latin", "latin-ext"], weight: ["400", "600", "700", "800"], variable: "--font-sora", display: "swap" });
+const instrument = Instrument_Sans({ subsets: ["latin", "latin-ext"], weight: ["400", "500", "600", "700"], variable: "--font-instrument", display: "swap" });
+const plexMono = IBM_Plex_Mono({ subsets: ["latin", "latin-ext"], weight: ["400", "500", "600"], variable: "--font-plex-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "numo",
-  description: "Rodinné finance pro domácnost",
-  // Next prefixes `manifest` with the base path on its own; the icons are
-  // plain public files, so those paths are built here.
+  title: "Numulo",
+  description: "Rodinné finance — můžu dnes utrácet, zvládáme měsíc, lezeme z toho ven?",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "numo", statusBarStyle: "default" },
-  icons: {
-    icon: [{ url: `${BASE}/icons/icon-192.png`, sizes: "192x192", type: "image/png" }],
-    apple: [{ url: `${BASE}/icons/icon-192.png`, sizes: "192x192" }],
-  },
+  appleWebApp: { capable: true, title: "Numulo", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#f6f6f4",
+  themeColor: "#E2EDE4",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="cs">
+    <html lang="cs" className={`${sora.variable} ${instrument.variable} ${plexMono.variable}`}>
       <body>{children}</body>
     </html>
   );

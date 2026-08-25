@@ -1,183 +1,115 @@
 import type { Metadata } from "next";
-import { CashLine } from "@/components/cash-line";
-import { CashflowChart } from "@/components/cashflow-chart";
-import { MonthLabel, Money } from "@/components/money";
+import { Cashflow } from "@/components/charts/cashflow";
+import { CashCurve } from "@/components/charts/cash-curve";
+import { Sparkline } from "@/components/charts/sparkline";
+import { Money } from "@/components/money";
+import { getSession } from "@/lib/data/household";
+import { getMonthsWithData, resolveMonth, todayIso } from "@/lib/data/months";
 import { getTrends } from "@/lib/data/trends";
-import { getDefaultMonth } from "@/lib/data/queries";
-import { formatCzk } from "@/lib/money";
+import { monthNameOnly } from "@/lib/date";
 
-export const metadata: Metadata = { title: "numo — vývoj" };
+export const metadata: Metadata = { title: "Numulo — vývoj" };
 export const dynamic = "force-dynamic";
 
 export default async function TrendsPage() {
-  const today = new Date().toISOString().slice(0, 10);
-  const month = await getDefaultMonth(today);
-  const trends = await getTrends(month);
+  const { household } = await getSession();
+  if (!household) return null;
 
-  const all = [...trends.months, ...trends.forecasts];
-  const lastComplete = trends.months[trends.months.length - 1];
-  const nextMonth = trends.forecasts[0];
+  const today = todayIso();
+  const months = await getMonthsWithData(household.id, today);
+  const month = resolveMonth(undefined, months, today);
+  const trends = await getTrends(household, month);
+
+  const nothingYet = trends.averages.length === 0 && trends.cashflow.every((p) => p.income === 0);
 
   return (
     <>
       <header className="page-head">
         <div>
-          <h1>Vývoj</h1>
-          <p className="page-sub">
-            {trends.months.length} odžitých měsíců a {trends.forecasts.length}{" "}
-            odhadnutých dopředu
-          </p>
+          <h1 className="page-title">Vývoj</h1>
+          <p className="page-sub">skutečnost zeleně · předpověď okrově</p>
         </div>
       </header>
 
-      <section className="tiles">
-        <article className="tile">
-          <h2>Průměrně utraceno</h2>
-          <p className="tile-value">
-            <Money value={trends.averageExpenses} />
-          </p>
-          <p className="tile-note">měsíčně, posledních 6 měsíců</p>
-        </article>
-
-        <article className="tile">
-          <h2>Průměrně přišlo</h2>
-          <p className="tile-value">
-            <Money value={trends.averageIncome} />
-          </p>
-          <p className="tile-note">
-            posledních 6 měsíců, bez převodů mezi vlastními účty
-          </p>
-        </article>
-
-        <article className="tile">
-          <h2>Proměnlivé útraty</h2>
-          <p className="tile-value">
-            <Money value={trends.variableAverage} />
-          </p>
-          <p className="tile-note">
-            {trends.hasRecurring
-              ? "průměr za 6 měsíců, bez pravidelných plateb"
-              : "průměr za 6 měsíců — zatím totéž co všechny útraty, protože pravidelné platby nejsou zadané"}
-          </p>
-        </article>
-
-        <article
-          className={`tile${
-            nextMonth && nextMonth.result < 0 ? " is-alert" : " is-good"
-          }`}
-        >
-          <h2>Příští měsíc</h2>
-          <p className="tile-value">
-            <Money value={nextMonth?.result ?? 0} />
-          </p>
-          <p className="tile-note">
-            {nextMonth ? (
-              <>
-                odhad výsledku <MonthLabel month={nextMonth.month} />
-              </>
-            ) : (
-              "chybí data"
-            )}
-          </p>
-        </article>
-      </section>
-
-      <section className="card">
-        <header className="card-head">
-          <h2>Přišlo a utraceno</h2>
-          <p className="card-sub">
-            Dva sloupce místo jednoho čistého: čistý výsledek zamlčí, jestli byl
-            měsíc dobrý díky většímu příjmu, nebo menším útratám — a to jsou dvě
-            různá rozhodnutí.
-          </p>
-        </header>
-        <CashflowChart months={all} />
-      </section>
-
-      <section className="card">
-        <header className="card-head">
-          <h2>Hotovost v čase</h2>
-          <p className="card-sub">
-            Plná čára je skutečnost, tečkovaná odhad. Odhad staví na
-            pravidelných platbách, splátkách a šestiměsíčním průměru
-            proměnlivých útrat.
-            {trends.cashStartsAt ? (
-              <>
-                {" "}Začíná v {trends.cashStartsAt} — od zadaného počátečního
-                stavu. Co bylo dřív, je historie: sytí průměry, ale zůstatek
-                z ní numo nezná a nebude si ho domýšlet.
-              </>
-            ) : null}
-          </p>
-        </header>
-        <CashLine points={trends.cash} />
-      </section>
-
-      {nextMonth ? (
+      {nothingYet ? (
         <section className="card">
-          <header className="card-head">
-            <h2>
-              Z čeho se odhad skládá — <MonthLabel month={nextMonth.month} />
-            </h2>
-            <p className="card-sub">
-              Splátky dluhů stojí na obou stranách schválně: zvednutý cíl je
-              vydělá, takže výsledek měsíce neovlivní a nesnědí rozpočet
-              domácnosti.
-            </p>
-          </header>
+          <p className="empty">
+            Na vývoj je potřeba pár měsíců historie. Naimportuj výpisy a graf se
+            tu objeví sám.
+          </p>
+        </section>
+      ) : null}
 
-          <ul className="crud-list">
-            {[
-              ["Rozpočet domácnosti", nextMonth.breakdown.budget, "příjem"],
-              ["Splátky dluhů (vydělat)", nextMonth.breakdown.debtInstalments, "příjem"],
-              ["Plánované příjmy", nextMonth.breakdown.plannedIncome, "příjem"],
-              ["Měsíční platby", nextMonth.breakdown.recurringMonthly, "výdaj"],
-              ["Předplatná", nextMonth.breakdown.subscriptions, "výdaj"],
-              ["Roční platby splatné tenhle měsíc", nextMonth.breakdown.yearlyDue, "výdaj"],
-              ["Splátky dluhů (zaplatit)", nextMonth.breakdown.debtInstalments, "výdaj"],
-              ["Plánované výdaje", nextMonth.breakdown.plannedExpenses, "výdaj"],
-              ["Proměnlivé útraty (průměr)", nextMonth.breakdown.variableAverage, "výdaj"],
-            ]
-              .filter(([, value]) => (value as number) !== 0)
-              .map(([label, value, side]) => (
-                <li key={label as string} className="crud-row">
-                  <span className="crud-main">
-                    <span className="crud-title">{label as string}</span>
-                    <span className="crud-meta">{side as string}</span>
+      {/* ── Cashflow ────────────────────────────────────────────────── */}
+      <section className="card">
+        <div className="card-head">
+          <h2 className="card-title">Cashflow</h2>
+          <span className="card-sub">kolik měsíc vydělal — příjmy minus výdaje</span>
+        </div>
+        <Cashflow points={trends.cashflow} />
+      </section>
+
+      {/* ── Hotovost v čase ─────────────────────────────────────────── */}
+      <section className="card">
+        <div className="card-head">
+          <h2 className="card-title">Hotovost v čase</h2>
+          <span className="card-sub">kolik je na účtech</span>
+        </div>
+
+        {trends.firstNegative ? (
+          <p className="chart-warning">
+            v {monthNameOnly(trends.firstNegative)} hrozí, že hotovost nevyjde
+          </p>
+        ) : null}
+
+        <CashCurve points={trends.cash} cashToday={trends.cashToday} />
+      </section>
+
+      {/* ── Trendy kategorií ────────────────────────────────────────── */}
+      {trends.trends.length > 0 ? (
+        <section className="card">
+          <div className="card-head">
+            <h2 className="card-title">Trendy kategorií</h2>
+            <span className="card-sub">posledních šest měsíců</span>
+          </div>
+
+          <ul className="trends">
+            {trends.trends.map((trend) => (
+              <li key={trend.id} className="trend">
+                <span className="trend-name">
+                  <span className="dot" style={{ background: trend.color }} aria-hidden="true" />
+                  {trend.name}
+                </span>
+                <Sparkline series={trend.series} color={trend.color} />
+                <span className="trend-figures">
+                  <span className="trend-latest"><Money value={trend.latest} tone="plain" /></span>
+                  <span className={`trend-delta ${trend.percent > 0 ? "up" : "down"}`}>
+                    {trend.percent > 0 ? "+" : trend.percent < 0 ? "−" : ""}
+                    {Math.abs(trend.percent)} % proti průměru
                   </span>
-                  <span className="numo-numeric crud-amount">
-                    {formatCzk(value as number)}
-                  </span>
-                  <span className="crud-actions crud-actions-empty" />
-                </li>
-              ))}
+                </span>
+              </li>
+            ))}
           </ul>
         </section>
       ) : null}
 
-      {lastComplete ? (
+      {/* ── Průměry ─────────────────────────────────────────────────── */}
+      {trends.averages.length > 0 ? (
         <section className="card">
-          <header className="card-head">
-            <h2>Měsíc po měsíci</h2>
-          </header>
-          <ul className="crud-list">
-            {[...trends.months].reverse().map((row) => (
-              <li key={row.month} className="crud-row">
-                <span className="crud-main">
-                  <span className="crud-title">
-                    <MonthLabel month={row.month} />
-                  </span>
-                  <span className="crud-meta">
-                    přišlo {formatCzk(row.income)} · utraceno{" "}
-                    {formatCzk(row.expenses)}
-                  </span>
+          <div className="card-head">
+            <h2 className="card-title">Průměry</h2>
+            <span className="card-sub">Kč/měs za posledních šest měsíců</span>
+          </div>
+
+          <ul className="averages">
+            {trends.averages.map((item) => (
+              <li key={item.name}>
+                <span className="average-name">
+                  <span className="dot" style={{ background: item.color }} aria-hidden="true" />
+                  {item.name}
                 </span>
-                <span
-                  className={`numo-numeric crud-amount${row.result < 0 ? " is-negative" : ""}`}
-                >
-                  {formatCzk(row.result, { sign: row.result > 0 })}
-                </span>
-                <span className="crud-actions crud-actions-empty" />
+                <span className="average-value"><Money value={item.mean} tone="plain" /></span>
               </li>
             ))}
           </ul>

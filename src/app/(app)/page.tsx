@@ -2,26 +2,18 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Envelopes } from "@/components/envelopes";
 import { Heatmap } from "@/components/heatmap";
-import { MonthLabel, Money, formatDayMonth } from "@/components/money";
+import { Money } from "@/components/money";
 import { MonthPicker } from "@/components/month-picker";
+import { Info } from "@/components/tooltip";
 import { TransactionList } from "@/components/transaction-list";
-import { computeDailyLimit } from "@/lib/calc/daily-limit";
-import {
-  getAccount,
-  getCategories,
-  getDailySpending,
-  getDefaultMonth,
-  getEnvelopes,
-  getLatestTransactionDate,
-  getMonthBalance,
-  getMonthsWithData,
-  getReserve,
-  getTransactions,
-  getUncategorisedCount,
-} from "@/lib/data/queries";
+import { EmptyHousehold } from "@/components/empty-household";
+import { getSession } from "@/lib/data/household";
+import { getMonthSnapshot } from "@/lib/data/month";
+import { getMonthsWithData, resolveMonth, todayIso } from "@/lib/data/months";
+import { daysInMonth, shortDate } from "@/lib/date";
 import { formatCzk } from "@/lib/money";
 
-export const metadata: Metadata = { title: "numo — přehled" };
+export const metadata: Metadata = { title: "Numulo — přehled" };
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage({
@@ -30,179 +22,173 @@ export default async function OverviewPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const today = new Date().toISOString().slice(0, 10);
+  const { household } = await getSession();
+  if (!household) return null;
 
-  const months = await getMonthsWithData();
-  const requested = typeof params.mesic === "string" ? params.mesic : null;
-  const month =
-    requested && months.includes(requested)
-      ? requested
-      : await getDefaultMonth(today);
+  const today = todayIso();
+  const months = await getMonthsWithData(household.id, today);
+  const month = resolveMonth(params.mesic, months, today);
+  const snapshot = await getMonthSnapshot(household, month, today);
 
-  const [account, balance, reserve, envelopes, days, recent, latest, uncategorised, categories] =
-    await Promise.all([
-      getAccount(),
-      getMonthBalance(month),
-      getReserve(),
-      getEnvelopes(month),
-      getDailySpending(month),
-      getTransactions({ month, limit: 8 }),
-      getLatestTransactionDate(),
-      getUncategorisedCount(month),
-      getCategories(),
-    ]);
+  if (snapshot.isEmpty) {
+    return <EmptyHousehold householdName={household.name} />;
+  }
 
-  // Rezerva only means something once the opening cash position is entered.
-  const reserveReady =
-    account.initialBalance !== 0 || reserve.cash !== 0 || reserve.debts !== 0;
-
-  const daily = computeDailyLimit({
-    month,
-    budget: balance.budget,
-    spent: balance.spent,
-    today,
-  });
+  const { dailyLimit: limit, reserve, goal } = snapshot;
 
   return (
     <>
       <header className="page-head">
         <div>
-          <h1>Přehled</h1>
-          {latest ? (
-            <p className="page-sub">
-              výpis k {formatDayMonth(latest)}
-              {uncategorised > 0 ? (
-                <>
-                  {" · "}
-                  {/* With most of the month unsorted the envelopes are empty and
-                      every category number is wrong — so this is a link, not a
-                      statistic. */}
-                  <Link href="/transakce/roztridit">
-                    {uncategorised} útrat bez kategorie — roztřídit ›
-                  </Link>
-                </>
-              ) : null}
-            </p>
+          <h1 className="page-title">Přehled</h1>
+          {snapshot.latestTransactionDate ? (
+            <p className="page-sub">výpis k {shortDate(snapshot.latestTransactionDate)}</p>
           ) : null}
         </div>
-        <MonthPicker months={months} current={month} basePath="/" />
+        <MonthPicker
+          months={months.all}
+          current={month}
+          dayNote={
+            snapshot.isCurrentMonth
+              ? `den ${snapshot.today} z ${daysInMonth(month)}`
+              : undefined
+          }
+        />
       </header>
 
-      <section className="tiles">
-        <article className="tile">
-          <h2>Rozpočet</h2>
-          <p className="tile-value">
-            <Money value={balance.budget} />
-          </p>
-          <p className="tile-note">
-            strop útrat domácnosti, ne příjem
-          </p>
-        </article>
+      {/* ── Bilance ─────────────────────────────────────────────────── */}
+      <section className="card sec-balance">
+        <div className="card-head"><h2 className="card-title">Bilance</h2></div>
 
-        <article className="tile">
-          <h2>Utraceno</h2>
-          <p className="tile-value">
-            <Money value={balance.spent} />
-          </p>
-          <p className="tile-note">
-            <MonthLabel month={month} />
-          </p>
-        </article>
+        <div className="balance">
+          <div className="tile">
+            <span className="tile-label">rozpočet</span>
+            <p className="tile-value"><Money value={snapshot.monthlyBudget} tone="plain" /></p>
+          </div>
 
-        <article className={`tile${balance.remaining < 0 ? " is-alert" : ""}`}>
-          <h2>Zbývá na útratu</h2>
-          <p className="tile-value">
-            <Money value={balance.remaining} />
-          </p>
-          <p className="tile-note">
-            {balance.remaining < 0
-              ? "rozpočet je překročený"
-              : `z ${formatCzk(balance.budget)}`}
-          </p>
-        </article>
+          <div className="tile">
+            <span className="tile-label">výdaje</span>
+            <p className="tile-value"><Money value={snapshot.spending} tone="plain" /></p>
+          </div>
 
-        <article
-          className={`tile${!reserveReady ? "" : reserve.reserve < 0 ? " is-alert" : ""}`}
-        >
-          <h2>Rezerva</h2>
-          {reserveReady ? (
-            <>
-              <p className="tile-value">
-                <Money value={reserve.reserve} />
-              </p>
-              <p className="tile-note">
-                hotovost {formatCzk(reserve.cash)} − dluhy{" "}
-                {formatCzk(reserve.debts)}
-              </p>
-            </>
-          ) : (
-            <>
-              {/* Zero here would be a claim, not a fact — nothing has been
-                  entered yet, so say that instead of showing a number. */}
-              <p className="tile-value tile-unset">—</p>
-              <p className="tile-note">
-                <Link href="/nastaveni">zadat počáteční stav ›</Link>
-              </p>
-            </>
-          )}
-        </article>
+          <div className="tile">
+            <span className="tile-label">plánované</span>
+            <p className="tile-value"><Money value={snapshot.planned} tone="plain" /></p>
+            <p className="tile-note">nezaplacené + z Plánu</p>
+          </div>
+
+          <Link href="/plan" className="tile" style={{ textDecoration: "none" }}>
+            <span className="tile-label">spoření</span>
+            <p className="tile-value"><Money value={snapshot.savings} tone="plain" /></p>
+          </Link>
+
+          <div className="tile">
+            <span className="tile-label">
+              rezerva{" "}
+              <Info>
+                Hotovost {formatCzk(reserve.cash)} − dluhy {formatCzk(reserve.debts)} ={" "}
+                {formatCzk(reserve.reserve)}.
+              </Info>
+            </span>
+            <p className="tile-value"><Money value={reserve.reserve} /></p>
+            <p className="tile-note">celková pozice</p>
+          </div>
+
+          <div className="tile-hero span-2 desktop-only">
+            <span className="tile-label">zbývá na útratu</span>
+            <p className="hero-value">
+              <Money value={snapshot.remaining} tone={snapshot.remaining < 0 ? "auto" : "positive"} />
+            </p>
+          </div>
+        </div>
+
+        <Link href="/pravidelne" className="balance-foot">
+          povinnosti <span className="num">{snapshot.paidCount}/{snapshot.dueCount}</span> · zbývá{" "}
+          <Money value={snapshot.obligations} tone="plain" /> ›
+        </Link>
       </section>
 
-      <section className="card">
-        <header className="card-head">
-          <h2>Denní limit</h2>
-          <span className="card-flag">podle §4 ještě neověřeno</span>
-        </header>
+      {/* ── Denní limit ─────────────────────────────────────────────── */}
+      <section className="card sec-limit">
+        <div className="card-head">
+          <h2 className="card-title">
+            Denní limit{" "}
+            <Info>
+              Zbývá {formatCzk(snapshot.remaining + snapshot.savings)} − spoření{" "}
+              {formatCzk(snapshot.savings)} = {formatCzk(snapshot.remaining)} na útratu.
+              Děleno {limit.daysLeft} zbývajícími dny = {formatCzk(limit.perDay)} na den.
+            </Info>
+          </h2>
+        </div>
 
-        {daily.perDay === null ? (
-          <p className="empty-note">
-            Tenhle měsíc už skončil. Průměrně jste utráceli{" "}
-            <strong>{formatCzk(daily.averageSoFar ?? 0)}</strong> denně.
+        {/* Phone only: the figure this whole card is about, above the card
+            that divides it. On a desktop it lives in the Bilance grid. */}
+        <div className="hero-remaining mobile-only">
+          <span className="tile-label">zbývá na útratu</span>
+          <p className="hero-value hero-big">
+            <Money value={snapshot.remaining} tone={snapshot.remaining < 0 ? "auto" : "positive"} />
+          </p>
+        </div>
+
+        {limit.daysLeft === 0 ? (
+          <p className="empty">
+            Měsíc skončil. Průměrně jste utráceli <Money value={limit.pace} tone="plain" /> denně.
           </p>
         ) : (
           <>
-            <p className="hero-value">
-              <Money value={daily.perDay} />
-              <span className="hero-unit">/ den</span>
-            </p>
-            <p className="tile-note">
-              {formatCzk(daily.remaining)} ÷ {daily.daysLeft}{" "}
-              {daily.daysLeft === 1 ? "zbývající den" : "zbývajících dní"}
-              {daily.averageSoFar !== null
-                ? ` · zatím utrácíte ${formatCzk(daily.averageSoFar)} denně`
-                : null}
+            <span className="tile-label mobile-only">denní limit</span>
+            <p className="limit-value"><Money value={limit.perDay} tone="plain" /></p>
+            <p className={`limit-projection ${limit.projection < 0 ? "warn" : "pos"}`}>
+              tímhle tempem skončíš <Money value={limit.projection} tone="plain" />{" "}
+              <Info>
+                Zatím utrácíš průměrně {formatCzk(limit.pace)} denně (variabilní výdaje{" "}
+                {formatCzk(snapshot.variableSpending)} ÷ {snapshot.today} dní). Stejným tempem
+                utratíš do konce měsíce ještě asi {formatCzk(limit.willSpend)}.
+              </Info>
             </p>
           </>
         )}
       </section>
 
-      <section className="card">
-        <header className="card-head">
-          <h2>Obálky</h2>
-        </header>
-        <Envelopes envelopes={envelopes} />
+      {/* ── Obálky ──────────────────────────────────────────────────── */}
+      <section className="card sec-envelopes">
+        <div className="card-head">
+          <h2 className="card-title">Obálky</h2>
+          <Link href="/plan" className="card-link">spravovat rozpočty ›</Link>
+        </div>
+        <Envelopes categories={snapshot.categories} />
       </section>
 
-      <section className="card">
-        <header className="card-head">
-          <h2>Útraty po dnech</h2>
-        </header>
-        <Heatmap days={days} month={month} />
-      </section>
-
-      <section className="card">
-        <header className="card-head">
-          <h2>Poslední transakce</h2>
-          <Link href={`/transakce?mesic=${month}`} className="card-action">
-            všechny ›
-          </Link>
-        </header>
-        <TransactionList
-          transactions={recent}
-          categories={categories}
-          emptyNote="V tomhle měsíci nejsou žádné transakce."
+      {/* ── Útraty podle dnů ────────────────────────────────────────── */}
+      <section className="card sec-heat">
+        <div className="card-head"><h2 className="card-title">Útraty podle dnů</h2></div>
+        <Heatmap
+          days={snapshot.daily}
+          month={month}
+          today={snapshot.today}
+          isCurrentMonth={snapshot.isCurrentMonth}
         />
       </section>
+
+      {/* ── Poslední transakce ──────────────────────────────────────── */}
+      <section className="card sec-transactions">
+        <div className="card-head">
+          <h2 className="card-title">Poslední transakce</h2>
+          <Link href="/transakce" className="card-link">všechny ›</Link>
+        </div>
+        <TransactionList
+          transactions={snapshot.transactions.slice(0, 5)}
+          today={today}
+          grouped={false}
+        />
+      </section>
+
+      {/* Goal lives on Plán, but its shortfall is worth surfacing here. */}
+      {!goal.covered && goal.missing > 0 ? (
+        <Link href="/plan" className="card nudge">
+          Do cíle měsíce schází <Money value={goal.missing} /> — podívej se do Plánu ›
+        </Link>
+      ) : null}
     </>
   );
 }

@@ -1,262 +1,281 @@
-import { and, eq, sql } from "drizzle-orm";
-import { getDb } from "@/db/getDb";
-import { transactions } from "@/db/schema";
+import { createClient } from "@/lib/supabase/server";
 import {
-  actualMonth,
-  averageVariableSpending,
+  average,
   cashOverTime,
-  forecastMonth,
+  monthResult,
+  percentAgainstAverage,
   type CashPoint,
-  type Forecast,
   type MonthResult,
-} from "@/lib/calc/cashflow";
-import { addMonths, lastMonths, monthRange, type IsoMonth } from "@/lib/date";
-import { ACCOUNT_ID, getAccount } from "./queries";
-import {
-  getDebts,
-  getPlannedItems,
-  getRecurringMonthly,
-  getRecurringYearly,
-  getSubscriptions,
-} from "./plan";
+} from "@/lib/calc";
+import { addMonths, lastMonths, monthEnd, monthStart, type IsoMonth } from "@/lib/date";
+import type { HouseholdRow } from "./household";
 
 /**
- * Per-month totals, aggregated in SQL.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Everything the Vývoj screen draws.
  *
- * The calc functions take transactions, but feeding them a year of rows just
- * to add them up is wasteful — one synthetic row per month gives the same
- * answer for anything that only sums.
+ * One read of the last twelve months, aggregated in memory. Twelve months of a
+ * household's payments is a few thousand rows — small enough that a round trip
+ * per chart would cost more than the arithmetic does.
+ *
+ * The forecast deserves saying out loud: a future month's result is the
+ * savings target, because that is what the plan *says* will be left over, and
+ * we know nothing else about a month that has not happened. The one-off
+ * outgoings we do know about — a yearly premium, a planned expense with a date
+ * — are subtracted from cash separately, exactly as §4 has it. That is the
+ * whole point of the cash curve: a smooth average never dips, and the dip is
+ * the thing worth seeing.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
-async function monthlyAggregates(): Promise<
-  Map<IsoMonth, { income: number; expenses: number; net: number }>
-> {
-  const rows = await getDb()
-    .select({
-      month: sql<string>`substr(${transactions.date}, 1, 7)`,
-      income: sql<number>`coalesce(sum(case when ${transactions.amount} > 0 and ${transactions.isTransfer} = 0 then ${transactions.amount} else 0 end), 0)`,
-      expenses: sql<number>`coalesce(-sum(case when ${transactions.amount} < 0 and ${transactions.isTransfer} = 0 and ${transactions.isBusiness} = 0 then ${transactions.amount} else 0 end), 0)`,
-      net: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
-    })
-    .from(transactions)
-    .where(eq(transactions.accountId, ACCOUNT_ID))
-    .groupBy(sql`substr(${transactions.date}, 1, 7)`);
 
-  return new Map(
-    rows.map((row) => [
-      row.month,
-      {
-        income: Number(row.income),
-        expenses: Number(row.expenses),
-        net: Number(row.net),
-      },
-    ]),
-  );
+export interface CategoryTrend {
+  id: string;
+  name: string;
+  color: string;
+  /** Six months, oldest first. */
+  series: number[];
+  latest: number;
+  mean: number;
+  percent: number;
 }
 
-/**
- * Net movement per month counting only what lands after the opening-balance
- * date, so the cash line starts from the same position Rezerva does.
- *
- * The cut-off can fall mid-month, so it is applied per row in SQL — filtering
- * whole months would silently re-count everything before it.
- */
-async function netByMonthAfter(
-  cutoff: string | null,
-): Promise<Map<IsoMonth, number>> {
-  const rows = await getDb()
-    .select({
-      month: sql<string>`substr(${transactions.date}, 1, 7)`,
-      net: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
-    })
-    .from(transactions)
-    .where(
-      cutoff === null
-        ? eq(transactions.accountId, ACCOUNT_ID)
-        : and(
-            eq(transactions.accountId, ACCOUNT_ID),
-            sql`${transactions.date} > ${cutoff}`,
-          ),
-    )
-    .groupBy(sql`substr(${transactions.date}, 1, 7)`);
-
-  return new Map(rows.map((row) => [row.month, Number(row.net)]));
-}
-
-/**
- * Household spending per month with recurring items taken out.
- *
- * Recurring items are forecast from their own tables, so leaving them in the
- * average would count them twice in every future month.
- */
-async function variableByMonth(
-  recurringNames: readonly string[],
-): Promise<Map<IsoMonth, number>> {
-  const rows = await getDb()
-    .select({
-      month: sql<string>`substr(${transactions.date}, 1, 7)`,
-      merchant: sql<string>`lower(coalesce(nullif(${transactions.merchant}, ''), ${transactions.description}, ''))`,
-      spent: sql<number>`coalesce(-sum(${transactions.amount}), 0)`,
-    })
-    .from(transactions)
-    .where(
-      and(
-        eq(transactions.accountId, ACCOUNT_ID),
-        eq(transactions.isTransfer, false),
-        eq(transactions.isBusiness, false),
-        sql`${transactions.amount} < 0`,
-      ),
-    )
-    .groupBy(sql`substr(${transactions.date}, 1, 7)`, sql`lower(coalesce(nullif(${transactions.merchant}, ''), ${transactions.description}, ''))`);
-
-  const names = recurringNames
-    .map((name) => name.trim().toLowerCase())
-    .filter((name) => name.length >= 3);
-
-  const byMonth = new Map<IsoMonth, number>();
-  for (const row of rows) {
-    if (names.some((name) => row.merchant.includes(name))) continue;
-    byMonth.set(row.month, (byMonth.get(row.month) ?? 0) + Number(row.spent));
-  }
-  return byMonth;
-}
-
-export interface TrendsData {
-  months: MonthResult[];
-  forecasts: Forecast[];
+export interface Trends {
+  months: IsoMonth[];
+  cashflow: MonthResult[];
   cash: CashPoint[];
-  cashStartsAt: IsoMonth | null;
-  variableAverage: number;
-  /** Mean household spending across completed months. */
-  averageExpenses: number;
-  averageIncome: number;
-  /** False while no recurring items are entered — then "variable" is simply all of it. */
-  hasRecurring: boolean;
-  currentMonth: IsoMonth;
+  /** The month whose cash first goes negative, if any. */
+  firstNegative: IsoMonth | null;
+  trends: CategoryTrend[];
+  averages: { name: string; color: string; mean: number }[];
+  cashToday: number;
 }
 
-/**
- * Everything the Vývoj page draws: past months as they happened, the next
- * `forecastMonths` as they are expected, and the cash line through both.
- */
-export async function getTrends(
-  currentMonth: IsoMonth,
-  forecastMonths = 6,
-): Promise<TrendsData> {
-  const [account, aggregates, debts, recurring, subs, yearly, planned] =
-    await Promise.all([
-      getAccount(),
-      monthlyAggregates(),
-      getDebts(),
-      getRecurringMonthly(),
-      getSubscriptions(),
-      getRecurringYearly(),
-      getPlannedItems(),
-    ]);
+const PAST = 2;
+const FORECAST = 3;
+const HISTORY = 6;
 
-  const variable = await variableByMonth([
-    ...recurring.map((item) => item.name),
-    ...subs.map((item) => item.name),
+export async function getTrends(
+  household: HouseholdRow,
+  currentMonth: IsoMonth,
+): Promise<Trends> {
+  const supabase = await createClient();
+
+  const history = lastMonths(currentMonth, HISTORY);
+  const from = monthStart(history[0]);
+  const to = monthEnd(currentMonth);
+
+  const [
+    { data: txRows },
+    { data: categoryRows },
+    { data: subscriptionRows },
+    { data: monthlyRows },
+    { data: yearlyRows },
+    { data: plannedRows },
+    { data: sinceRows },
+  ] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("date, amount, category_id, is_business, is_transfer")
+      .eq("household_id", household.id)
+      .gte("date", from)
+      .lte("date", to),
+    supabase.from("categories").select("id, name, color, sort").eq("household_id", household.id).order("sort"),
+    supabase.from("subscriptions").select("amount, active").eq("household_id", household.id),
+    supabase.from("recurring_monthly").select("amount, active").eq("household_id", household.id),
+    supabase.from("recurring_yearly").select("name, amount, due_month, active").eq("household_id", household.id),
+    supabase.from("planned_items").select("*").eq("household_id", household.id).eq("active", true),
+    supabase
+      .from("transactions")
+      .select("amount")
+      .eq("household_id", household.id)
+      .gt("date", household.initial_balance_date ?? "0001-01-01"),
   ]);
 
-  const known = [...aggregates.keys()].sort();
-  const firstMonth = known[0] ?? currentMonth;
-  const lastActual = known[known.length - 1] ?? currentMonth;
+  const budget = Number(household.monthly_budget);
+  const savings =
+    household.savings_mode === "percent"
+      ? Math.round((budget * Number(household.savings_value)) / 100)
+      : Number(household.savings_value);
 
-  // Past runs to the last month with data; the forecast starts the month after,
-  // so no month is ever drawn twice.
-  const pastMonths = monthRange(firstMonth, lastActual);
-  const futureMonths = monthRange(
-    addMonths(lastActual, 1),
-    addMonths(lastActual, forecastMonths),
+  const subscriptionTotal = (subscriptionRows ?? [])
+    .filter((row) => row.active)
+    .reduce((sum, row) => sum + Number(row.amount), 0);
+
+  /* ── měsíční příjmy a výdaje ze skutečnosti ─────────────────────────── */
+
+  const income = new Map<IsoMonth, number>();
+  const expenses = new Map<IsoMonth, number>();
+  const byCategory = new Map<string, Map<IsoMonth, number>>();
+  // A month with no statement is not a month where nothing was spent, and the
+  // two must never be averaged together.
+  const monthsWithData = new Set<IsoMonth>();
+
+  for (const row of txRows ?? []) {
+    const month = String(row.date).slice(0, 7);
+    monthsWithData.add(month);
+    if (row.is_transfer) continue;
+    const amount = Number(row.amount);
+
+    if (amount > 0) {
+      income.set(month, (income.get(month) ?? 0) + amount);
+      continue;
+    }
+    if (row.is_business) continue;
+
+    expenses.set(month, (expenses.get(month) ?? 0) - amount);
+
+    if (row.category_id) {
+      const series = byCategory.get(row.category_id) ?? new Map<IsoMonth, number>();
+      series.set(month, (series.get(month) ?? 0) - amount);
+      byCategory.set(row.category_id, series);
+    }
+  }
+
+  /* ── cashflow: minulost skutečná, teď podle §4, budoucnost podle plánu ─ */
+
+  const plannedFor = (month: IsoMonth, direction: "expense" | "income") =>
+    (plannedRows ?? []).reduce(
+      (sum, row) =>
+        row.direction === direction && (row.interval === "monthly" || row.month === month)
+          ? sum + Number(row.amount)
+          : sum,
+      0,
+    );
+
+  /** Yearly premiums and one-off planned expenses — what a smooth month hides. */
+  const extraordinaryFor = (month: IsoMonth) => {
+    const monthNo = Number(month.slice(5, 7));
+    const yearly = (yearlyRows ?? []).reduce(
+      (sum, row) => (row.active && row.due_month === monthNo ? sum + Number(row.amount) : sum),
+      0,
+    );
+    const oneOff = (plannedRows ?? []).reduce(
+      (sum, row) =>
+        row.direction === "expense" && row.interval === "once" && row.month === month
+          ? sum + Number(row.amount)
+          : sum,
+      0,
+    );
+    return yearly + oneOff;
+  };
+
+  const pastMonths = lastMonths(addMonths(currentMonth, -1), PAST).filter((month) =>
+    monthsWithData.has(month),
+  );
+  const futureMonths = Array.from({ length: FORECAST }, (_, index) =>
+    addMonths(currentMonth, index + 1),
   );
 
-  const months: MonthResult[] = pastMonths.map((month) => {
-    const totals = aggregates.get(month) ?? { income: 0, expenses: 0, net: 0 };
-    return {
+  const cashflow: MonthResult[] = [
+    ...pastMonths.map((month) =>
+      monthResult(
+        month,
+        income.get(month) ?? 0,
+        (expenses.get(month) ?? 0) + subscriptionTotal,
+        "actual",
+      ),
+    ),
+  ];
+
+  // §4: říjnové výdaje = max(rozpočet − spoření, výdaje + plánované).
+  // The budget is the floor because a month that has barely started has barely
+  // spent anything, and drawing that as a windfall would be a lie.
+  const currentSpending = (expenses.get(currentMonth) ?? 0) + subscriptionTotal;
+  const currentPlanned = plannedFor(currentMonth, "expense");
+  cashflow.push(
+    monthResult(
+      currentMonth,
+      budget,
+      Math.max(budget - savings, currentSpending + currentPlanned),
+      "forecast",
+    ),
+  );
+
+  for (const month of futureMonths) {
+    // Nothing is known about a month that has not happened, so the plan is the
+    // forecast: the budget comes in, the budget minus savings goes out, and
+    // whatever is separately planned for that month moves it.
+    cashflow.push(
+      monthResult(
+        month,
+        budget + plannedFor(month, "income"),
+        budget - savings + plannedFor(month, "expense"),
+        "forecast",
+      ),
+    );
+  }
+
+  /* ── hotovost v čase ────────────────────────────────────────────────── */
+
+  const movement = (sinceRows ?? []).reduce((sum, row) => sum + Number(row.amount), 0);
+  const cashToday = Number(household.initial_balance) + movement;
+
+  // Past balances are pinned to today's figure and walked backwards through
+  // each month's actual result — the same anchor the reserve tile uses.
+  const pastCash: { month: IsoMonth; cash: number }[] = [];
+  let running = cashToday;
+  for (let index = cashflow.length - 1; index >= 0; index -= 1) {
+    const point = cashflow[index];
+    if (point.kind !== "actual") continue;
+    pastCash.unshift({ month: point.month, cash: running - point.result });
+    running -= point.result;
+  }
+
+  const cash = cashOverTime({
+    cashToday,
+    currentMonth,
+    past: pastCash,
+    future: futureMonths.map((month) => ({
       month,
-      income: totals.income,
-      expenses: totals.expenses,
-      result: totals.income - totals.expenses,
-      kind: "actual",
+      result: cashflow.find((point) => point.month === month)?.result ?? 0,
+      extraordinary: extraordinaryFor(month),
+    })),
+  });
+
+  /* ── trendy a průměry ───────────────────────────────────────────────── */
+
+  const known = history.filter((month) => monthsWithData.has(month));
+
+  const categories = (categoryRows ?? []).map((row) => {
+    const spend = byCategory.get(row.id as string);
+    const series = known.map((month) => spend?.get(month) ?? 0);
+    const mean = average(series);
+    const latest = series[series.length - 1] ?? 0;
+    return {
+      id: row.id as string,
+      name: row.name as string,
+      color: row.color as string,
+      series,
+      latest,
+      mean,
+      percent: percentAgainstAverage(latest, mean),
     };
   });
 
-  const variableAverage = averageVariableSpending(
-    variable,
-    addMonths(lastActual, 1),
-    6,
-  );
-
-  const forecasts = futureMonths.map((month) =>
-    forecastMonth({
-      month,
-      monthlyBudget: account.monthlyBudget,
-      debts,
-      recurringMonthly: recurring,
-      subscriptions: subs.filter((item) => item.status === "confirmed"),
-      recurringYearly: yearly,
-      plannedItems: planned,
-      variableAverage,
-    }),
-  );
-
-  const forecastResultByMonth = new Map(
-    forecasts.map((forecast) => [forecast.month, forecast.result]),
-  );
-
-  const netAfterCutoff = await netByMonthAfter(account.initialBalanceDate);
-
-  // The cash line may only start where numo knows the balance. Everything
-  // before the opening-balance date is history that was deliberately excluded
-  // from Rezerva, so drawing it would assert a position nobody entered — a
-  // flat line at the opening balance across months that actually moved.
-  const cashFrom = account.initialBalanceDate
-    ? account.initialBalanceDate.slice(0, 7)
-    : firstMonth;
-
-  const cashMonths = [...pastMonths, ...futureMonths].filter(
-    (month) => month >= cashFrom,
-  );
-
-  const cash = cashOverTime({
-    initialBalance: account.initialBalance,
-    // The cut-off is already applied in the query above, so applying it again
-    // here would drop the cut-off month twice.
-    initialBalanceDate: null,
-    // One synthetic row per month: cashOverTime only ever sums within a month.
-    transactions: [...netAfterCutoff.entries()].map(([month, net]) => ({
-      date: `${month}-15`,
-      amount: net,
-      isBusiness: false,
-      isTransfer: false,
-    })),
-    months: cashMonths,
-    currentMonth: addMonths(lastActual, 1),
-    forecastResultByMonth,
-  });
-
-  // Same window as variableAverage, or the tiles contradict each other: a
-  // subset of spending must never average higher than the whole.
-  const windowMonths = new Set(lastMonths(lastActual, 6));
-  const recent = months.filter((month) => windowMonths.has(month.month));
-
-  const mean = (values: number[]) =>
-    values.length === 0
-      ? 0
-      : Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+  const spendingCategories = categories.filter((category) => category.mean > 0);
 
   return {
-    months,
-    forecasts,
+    months: known,
+    cashflow,
     cash,
-    /** Set when the chart starts later than the data, so the page can say why. */
-    cashStartsAt: cashFrom > firstMonth ? cashFrom : null,
-    variableAverage,
-    averageExpenses: mean(recent.map((month) => month.expenses)),
-    averageIncome: mean(recent.map((month) => month.income)),
-    hasRecurring: recurring.length + subs.length > 0,
-    currentMonth: lastActual,
+    firstNegative: cash.find((point) => point.belowZero)?.month ?? null,
+    // Four rows, the four the household actually spends in — and only once
+    // there are two months to draw a line between.
+    trends:
+      known.length < 2
+        ? []
+        : [...spendingCategories].sort((a, b) => b.mean - a.mean).slice(0, 4),
+    averages: [...spendingCategories]
+      .sort((a, b) => b.mean - a.mean)
+      .map(({ name, color, mean }) => ({ name, color, mean })),
+    cashToday,
   };
 }
 
-export { actualMonth };
+/** Kept for the debts page, which needs monthly instalments without the rest. */
+export function instalmentTotal(rows: { installment_amount: unknown; active: unknown }[]): number {
+  return rows.reduce(
+    (sum, row) => (row.active ? sum + Number(row.installment_amount) : sum),
+    0,
+  );
+}

@@ -115,9 +115,9 @@ function median(values: number[]): number {
 }
 
 /** What cancelling a set of recurring items frees up. */
-export function simulateCancellation(
-  items: readonly { id: number; amount: number }[],
-  cancelledIds: readonly number[],
+export function simulateCancellation<Id>(
+  items: readonly { id: Id; amount: number }[],
+  cancelledIds: readonly Id[],
 ): { monthly: number; yearly: number } {
   const cancelled = new Set(cancelledIds);
   const monthly = items.reduce(

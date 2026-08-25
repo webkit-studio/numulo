@@ -1,124 +1,80 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useToast } from "@/components/toast/toast";
-import { apiUrl } from "@/lib/base-path";
-import { postJson } from "@/lib/client/post-json";
-import { formatCzk, halereToCzk } from "@/lib/money";
-
-interface Candidate {
-  name: string;
-  amount: number;
-  day: number | null;
-  monthCount: number;
-  firstMonth: string;
-  lastMonth: string;
-  stillRunning: boolean;
-}
+import { useTransition } from "react";
+import { acceptDetected, dismissDetected } from "@/app/actions/recurring";
+import { useToast } from "@/components/toast";
+import { formatCzk } from "@/lib/money";
+import type { DetectedSubscription } from "@/lib/recurring/detect";
 
 /**
- * Subscriptions numo found in the statement but nobody has confirmed yet.
+ * "Vypadá to na předplatné" — the one place Numulo volunteers something.
  *
- * Loaded on demand rather than on every page view: scanning the whole history
- * is not free, and the answer only changes after an import.
+ * The claim is arithmetic and checkable: this merchant charged about this much
+ * in this many separate months. Both answers are one click, and both are
+ * remembered, so the card empties out instead of nagging.
  */
-export function DetectedSubscriptions() {
-  const router = useRouter();
+export function Detected({
+  householdId,
+  candidates,
+}: {
+  householdId: string;
+  candidates: DetectedSubscription[];
+}) {
   const toast = useToast();
-  const [candidates, setCandidates] = useState<Candidate[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [added, setAdded] = useState<Set<string>>(new Set());
+  const [busy, startBusy] = useTransition();
 
-  async function scan() {
-    setLoading(true);
-    try {
-      const response = await fetch(apiUrl("/api/recurring/detect"));
-      const data = (await response.json()) as {
-        candidates?: Candidate[];
-        error?: string;
-      };
-      if (!response.ok) {
-        toast.show(data.error ?? "Hledání se nepovedlo.", { tone: "danger" });
-        return;
-      }
-      setCandidates(data.candidates ?? []);
-    } catch {
-      toast.show("Server neodpověděl.", { tone: "danger" });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function confirm(candidate: Candidate) {
-    const result = await postJson(apiUrl("/api/subscriptions"), {
-      name: candidate.name,
-      amount: halereToCzk(candidate.amount),
-      day: candidate.day ?? "",
-      active: candidate.stillRunning,
-      status: "confirmed",
-    });
-
-    if (!result.ok) {
-      toast.show(result.error ?? "Nepovedlo se přidat.", { tone: "danger" });
-      return;
-    }
-
-    setAdded((current) => new Set(current).add(candidate.name));
-    toast.show(`${candidate.name} přidáno mezi předplatná.`, { tone: "success" });
-    router.refresh();
-  }
+  if (candidates.length === 0) return null;
 
   return (
-    <div className="detect">
-      <button type="button" onClick={() => void scan()} disabled={loading}>
-        {loading ? "Hledám…" : "Najít předplatná ve výpisu"}
-      </button>
+    <section className="card card-amber">
+      <div className="card-head"><h2 className="card-title">Auto-detekce</h2></div>
 
-      {candidates === null ? (
-        <p className="seed-hint">
-          Projde útraty a najde obchodníky, kteří strhávají skoro stejnou částku
-          nejmíň tři měsíce po sobě. Nic se neuloží, dokud to nepotvrdíš.
-        </p>
-      ) : candidates.length === 0 ? (
-        <p className="empty-note">
-          Nic dalšího ve výpisu nevypadá jako pravidelná platba.
-        </p>
-      ) : (
-        <ul className="crud-list">
-          {candidates.map((candidate) => (
-            <li key={`${candidate.name}-${candidate.amount}`} className="crud-row">
-              <span className="crud-main">
-                <span className="crud-title">
-                  {candidate.name}
-                  {candidate.stillRunning ? null : (
-                    <span className="tx-chip is-flag">možná už zrušené</span>
-                  )}
-                </span>
-                <span className="crud-meta">
-                  {candidate.monthCount}× · {candidate.firstMonth} –{" "}
-                  {candidate.lastMonth}
-                  {candidate.day ? ` · kolem ${candidate.day}.` : ""}
-                </span>
-              </span>
+      <ul className="detected">
+        {candidates.map((candidate) => (
+          <li key={candidate.name}>
+            <p className="detected-claim">
+              Vypadá to na předplatné — <b>{candidate.name}</b>{" "}
+              <b className="num">{formatCzk(candidate.amount)}</b>, {candidate.months.length}×
+              {candidate.day ? ` kolem ${candidate.day}.` : ""}. Přidat mezi předplatná?
+            </p>
+            <div className="detected-actions">
+              <button
+                type="button"
+                className="btn btn-small"
+                disabled={busy}
+                onClick={() =>
+                  startBusy(async () => {
+                    const result = await acceptDetected(
+                      householdId,
+                      candidate.name,
+                      candidate.amount,
+                      candidate.day,
+                    );
+                    toast.show(result.notice ?? result.error ?? "", result.error ? "danger" : "success");
+                  })
+                }
+              >
+                Přidat
+              </button>
+              <button
+                type="button"
+                className="btn-quiet"
+                disabled={busy}
+                onClick={() =>
+                  startBusy(async () => {
+                    const result = await dismissDetected(householdId, candidate.name);
+                    toast.show(result.notice ?? result.error ?? "", result.error ? "danger" : "success");
+                  })
+                }
+              >
+                Není předplatné
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
 
-              <span className="numo-numeric crud-amount">
-                {formatCzk(candidate.amount)}
-              </span>
-
-              <span className="crud-actions">
-                {added.has(candidate.name) ? (
-                  <span className="sort-settled">přidáno</span>
-                ) : (
-                  <button type="button" onClick={() => void confirm(candidate)}>
-                    + přidat
-                  </button>
-                )}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+      <p className="detected-note">Skutečné platby se automaticky párují na pravidelné.</p>
+    </section>
   );
 }

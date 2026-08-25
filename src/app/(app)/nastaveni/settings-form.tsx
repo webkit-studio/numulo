@@ -1,96 +1,97 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { apiUrl } from "@/lib/base-path";
-import { postJson } from "@/lib/client/post-json";
-import { halereToCzk } from "@/lib/money";
+import { useActionState } from "react";
+import { saveHouseholdSettings } from "@/app/actions/household";
+import { emptyState } from "@/app/actions/state";
+import { SubmitButton } from "@/components/submit-button";
 
 export function SettingsForm({
+  householdId,
+  name,
   monthlyBudget,
   initialBalance,
   initialBalanceDate,
+  kind,
 }: {
+  householdId: string;
+  name: string;
   monthlyBudget: number;
   initialBalance: number;
   initialBalanceDate: string | null;
+  kind: "household" | "business";
 }) {
-  const router = useRouter();
-  const [budget, setBudget] = useState(String(halereToCzk(monthlyBudget)));
-  const [balance, setBalance] = useState(String(halereToCzk(initialBalance)));
-  const [date, setDate] = useState(initialBalanceDate ?? "");
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [pending, setPending] = useState(false);
-
-  async function onSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setPending(true);
-    setError(null);
-    setSaved(false);
-
-    const result = await postJson(apiUrl("/api/settings/account"), {
-      monthlyBudget: budget,
-      initialBalance: balance,
-      initialBalanceDate: date,
-    });
-
-    if (!result.ok) setError(result.error);
-    else {
-      setSaved(true);
-      router.refresh();
-    }
-    setPending(false);
-  }
+  const [state, action] = useActionState(saveHouseholdSettings, emptyState);
 
   return (
-    <form onSubmit={onSubmit} className="settings-form">
-      <label htmlFor="budget">Měsíční rozpočet (Kč)</label>
-      <input
-        id="budget"
-        inputMode="decimal"
-        value={budget}
-        onChange={(event) => setBudget(event.target.value)}
-      />
-      <p className="seed-hint">
-        Strop útrat domácnosti. Není to výplata ani převod peněz.
-      </p>
+    <form className="stack-form" action={action}>
+      <input type="hidden" name="householdId" value={householdId} />
 
-      <label htmlFor="balance">Počáteční stav — hotovost (Kč)</label>
-      <input
-        id="balance"
-        inputMode="decimal"
-        value={balance}
-        onChange={(event) => setBalance(event.target.value)}
-      />
-      <p className="seed-hint">
-        Kolik máte celkem na sledovaných účtech k datu níž.{" "}
-        <strong>Bez dluhů</strong> — ty se odečtou samy z jejich vlastní
-        evidence. Může být i záporné.
-      </p>
+      <div className="form-grid">
+        <label className="field">
+          <span className="field-label">Název účtu</span>
+          <input className="input" type="text" name="name" defaultValue={name} required />
+        </label>
 
-      <label htmlFor="date">…k datu</label>
-      <input
-        id="date"
-        type="date"
-        value={date}
-        onChange={(event) => setDate(event.target.value)}
-      />
-      <p className="seed-hint">
-        Hranice historie. Transakce s dřívějším datem sytí průměry a Vývoj, ale
-        Rezervu nemění. Seed import ji nastavil na poslední den v master CSV.
-      </p>
+        <label className="field">
+          <span className="field-label">Typ</span>
+          <input
+            className="input"
+            type="text"
+            value={kind === "household" ? "osobní" : "podnikatelský"}
+            readOnly
+            disabled
+          />
+          <span className="field-hint">podnikatelský připravujeme</span>
+        </label>
 
-      {error ? (
-        <p role="alert" className="login-error">
-          {error}
-        </p>
-      ) : null}
-      {saved ? <p className="settings-saved">Uloženo.</p> : null}
+        <label className="field">
+          <span className="field-label">Měsíční rozpočet (Kč)</span>
+          <input
+            className="input num"
+            type="number"
+            name="monthlyBudget"
+            step="1"
+            min="0"
+            inputMode="decimal"
+            defaultValue={monthlyBudget}
+            required
+          />
+        </label>
 
-      <button type="submit" disabled={pending}>
-        {pending ? "Ukládám…" : "Uložit"}
-      </button>
+        <label className="field">
+          <span className="field-label">Počáteční stav — hotovost (Kč)</span>
+          <input
+            className="input num"
+            type="number"
+            name="initialBalance"
+            step="1"
+            inputMode="decimal"
+            defaultValue={initialBalance}
+            required
+          />
+          <span className="field-hint">
+            Kolik je celkem na sledovaných účtech. Bez dluhů — ty se odečtou samy.
+          </span>
+        </label>
+
+        <label className="field">
+          <span className="field-label">…k datu</span>
+          <input
+            className="input"
+            type="date"
+            name="initialBalanceDate"
+            defaultValue={initialBalanceDate ?? ""}
+          />
+          <span className="field-hint">
+            Hranice historie. Starší transakce sytí průměry, ale Rezervu nemění.
+          </span>
+        </label>
+      </div>
+
+      {state.error ? <p className="auth-error" role="alert">{state.error}</p> : null}
+      {state.notice ? <p className="form-notice">{state.notice}</p> : null}
+
+      <div><SubmitButton pendingLabel="Ukládám…">Uložit</SubmitButton></div>
     </form>
   );
 }

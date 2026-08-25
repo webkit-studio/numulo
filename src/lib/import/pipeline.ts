@@ -96,9 +96,9 @@ export type RowVerdict = "duplicate" | "review" | "new";
 export interface ClassifiedRow extends PreparedRow {
   verdict: RowVerdict;
   /** Category the stored rules chose, when they could. */
-  categoryId: number | null;
+  categoryId: string | null;
   categoryName: string | null;
-  ownerId: number | null;
+  ownerId: string | null;
   isTransfer: boolean;
   /** Why the row needs a human, when it does. */
   note: string | null;
@@ -109,9 +109,9 @@ export interface ClassifyInput {
   /** Fingerprints already in the database. */
   known: ReadonlySet<string>;
   /** merchant-lowercase → category, from the rules table. */
-  categoryRules: ReadonlyMap<string, { id: number; name: string }>;
+  categoryRules: ReadonlyMap<string, { id: string; name: string }>;
   transferPatterns: readonly string[];
-  ownerRules: ReadonlyMap<string, number>;
+  ownerRules: ReadonlyMap<string, string>;
 }
 
 /**
@@ -137,7 +137,7 @@ export function classifyRows(input: ClassifyInput): ClassifiedRow[] {
         categoryName: null,
         ownerId: null,
         isTransfer: false,
-        note: "už v numo je",
+        note: "už v Numulu je",
       };
     }
     seenInFile.add(row.fingerprint);

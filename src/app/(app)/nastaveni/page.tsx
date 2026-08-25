@@ -1,114 +1,71 @@
 import type { Metadata } from "next";
-import { getAccount, getCategories, getUsers } from "@/lib/data/queries";
-import { getDb } from "@/db/getDb";
-import { ACCOUNT_ID } from "@/lib/data/queries";
-import { listRules } from "@/lib/rules/engine";
-import { getCurrentUser } from "@/lib/auth/current-user";
-import { emailConfigured } from "@/lib/email/send";
-import { users as usersTable } from "@/db/schema";
-import { AccountSecurity } from "./account-security";
-import { RulesList, type RuleRow } from "./rules-list";
+import { getMembers, getSession } from "@/lib/data/household";
 import { SettingsForm } from "./settings-form";
+import { JoinCode } from "./join-code";
+import { halereToCzk } from "@/lib/money";
 
-export const metadata: Metadata = { title: "numo — nastavení" };
+export const metadata: Metadata = { title: "Numulo — nastavení účtu" };
 export const dynamic = "force-dynamic";
 
-const KIND_LABEL: Record<string, string> = {
-  "merchant->category": "obchodník → kategorie",
-  "pattern->owner": "vzorek → kdo",
-  "pattern->business": "vzorek → podnikání",
-  "pattern->transfer": "vzorek → převod",
-};
-
 export default async function SettingsPage() {
-  const [account, rules, categories, users, me, members] = await Promise.all([
-    getAccount(),
-    listRules(getDb(), ACCOUNT_ID),
-    getCategories(),
-    getUsers(),
-    getCurrentUser(),
-    getDb()
-      .select({
-        id: usersTable.id,
-        name: usersTable.name,
-        email: usersTable.email,
-        passwordSetAt: usersTable.passwordSetAt,
-      })
-      .from(usersTable),
-  ]);
+  const { household, viewer } = await getSession();
+  if (!household || !viewer) return null;
 
-  const categoryName = new Map(categories.map((c) => [String(c.id), c.name]));
-  const userName = new Map(users.map((u) => [String(u.id), u.name]));
-
-  const rows: RuleRow[] = rules.map((rule) => ({
-    id: rule.id,
-    kindLabel: KIND_LABEL[rule.kind] ?? rule.kind,
-    pattern: rule.pattern,
-    targetLabel:
-      rule.kind === "merchant->category"
-        ? (categoryName.get(rule.target) ?? `kategorie ${rule.target}`)
-        : rule.kind === "pattern->owner"
-          ? (userName.get(rule.target) ?? `uživatel ${rule.target}`)
-          : rule.target === "0"
-            ? "ne"
-            : "ano",
-    createdFrom: rule.createdFrom ?? "ručně",
-  }));
+  const members = await getMembers(household.id);
 
   return (
     <>
       <header className="page-head">
         <div>
-          <h1>Nastavení</h1>
-          <p className="page-sub">Účet {account.name}</p>
+          <h1 className="page-title">Nastavení účtu</h1>
+          <p className="page-sub">{household.name}</p>
         </div>
       </header>
 
       <section className="card">
-        <header className="card-head">
-          <h2>Rozpočet a počáteční stav</h2>
-        </header>
-        <p className="card-lede">
-          Dokud počáteční stav nezadáš, Rezerva nemá z čeho počítat a na
-          Přehledu se místo čísla ukazuje výzva.
-        </p>
+        <div className="card-head">
+          <h2 className="card-title">Účet</h2>
+          <p className="card-sub">
+            Rozpočet je strop útrat domácnosti — není to výplata ani převod peněz.
+            Počáteční stav říká Rezervě, odkud začít počítat.
+          </p>
+        </div>
         <SettingsForm
-          monthlyBudget={account.monthlyBudget}
-          initialBalance={account.initialBalance}
-          initialBalanceDate={account.initialBalanceDate}
+          householdId={household.id}
+          name={household.name}
+          monthlyBudget={halereToCzk(household.monthly_budget)}
+          initialBalance={halereToCzk(household.initial_balance)}
+          initialBalanceDate={household.initial_balance_date}
+          kind={household.kind}
         />
       </section>
 
-      {me ? (
-        <section className="card">
-          <header className="card-head">
-            <h2>Heslo a přístup</h2>
-            <p className="card-sub">
-              Přihlášený jako {me.name}. Změna hesla odhlásí ostatní zařízení.
-            </p>
-          </header>
-          <AccountSecurity
-            me={{ id: me.id, name: me.name }}
-            emailConfigured={emailConfigured()}
-            members={members.map((member) => ({
-              id: member.id,
-              name: member.name,
-              email: member.email,
-              hasPassword: member.passwordSetAt !== null,
-            }))}
-          />
-        </section>
-      ) : null}
-
       <section className="card">
-        <header className="card-head">
-          <h2>Naučená pravidla</h2>
+        <div className="card-head">
+          <h2 className="card-title">Sdílení</h2>
           <p className="card-sub">
-            {rows.length} pravidel. Použijí se na každý další import — proto tu
-            jsou vidět a jdou smazat.
+            Kdo má tenhle kód, dostane se k financím domácnosti. Předej ho jen tomu,
+            komu důvěřuješ — a když se rozšíří, vyrob nový.
           </p>
-        </header>
-        <RulesList rules={rows} />
+        </div>
+        <JoinCode householdId={household.id} code={household.join_code} />
+
+        <ul className="member-list">
+          {members.map((member) => (
+            <li key={member.userId} className="member">
+              <span className="avatar" aria-hidden="true">
+                {member.name.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="member-name">
+                {member.name}
+                {member.userId === viewer.id ? <span className="member-you"> (ty)</span> : null}
+              </span>
+              <span className="member-role">
+                {member.role === "owner" ? "vlastník" : "člen"}
+              </span>
+            </li>
+          ))}
+        </ul>
       </section>
     </>
   );

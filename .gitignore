@@ -1,29 +1,10 @@
-# dependencies
 node_modules/
-.pnp
-.pnp.js
-
-# next
 .next/
 out/
 next-env.d.ts
-
-# opennext / cloudflare
-.open-next/
-.wrangler/
-worker-configuration.d.ts
-
-# local env — never commit secrets
+.netlify/
+# Never commit keys — this repo is public.
 .env
 .env.local
 .env*.local
-.dev.vars
-
-# local sqlite scratch
-*.sqlite
-*.sqlite3
-
-# misc
-.DS_Store
-*.tsbuildinfo
-coverage/
+tsconfig.tsbuildinfo

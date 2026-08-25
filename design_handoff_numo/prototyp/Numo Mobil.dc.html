@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/numo-design-system-2f16edc2-ea13-4aa5-97be-24f771ee863c/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/numo-design-system-2f16edc2-ea13-4aa5-97be-24f771ee863c/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/numo-design-system-2f16edc2-ea13-4aa5-97be-24f771ee863c/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/numo-design-system-2f16edc2-ea13-4aa5-97be-24f771ee863c/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/numo-design-system-2f16edc2-ea13-4aa5-97be-24f771ee863c/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/numo-design-system-2f16edc2-ea13-4aa5-97be-24f771ee863c/styles.css">
+  <script src="_ds/numo-design-system-2f16edc2-ea13-4aa5-97be-24f771ee863c/_ds_bundle.js"></script>
+  <style>
+    html,body{margin:0;padding:0;min-height:100%;}
+    body{
+      color:#0E3E2E;font-family:'Instrument Sans',sans-serif;background-color:#DFE9E0;
+      background-image:radial-gradient(700px 500px at 20% 10%, rgba(255,255,255,0.5), transparent 70%),radial-gradient(800px 600px at 80% 85%, rgba(240,244,229,0.6), transparent 70%);
+      background-attachment:fixed;
+    }
+    a{color:#176A4E;text-decoration:none;}
+    a:hover{color:#0E3E2E;}
+    @keyframes numo-fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+    @keyframes numo-sheet{from{transform:translateY(40px);opacity:0;}to{transform:none;opacity:1;}}
+    .numo-chiprow::-webkit-scrollbar{display:none;}
+    input::placeholder{color:#7E958A;}
+  </style>
+</helmet>
+<div data-screen-label="Numo mobil" style="min-height:100vh;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;padding:36px 16px;box-sizing:border-box;">
+<a href="Numo Desktop.dc.html" style="background:rgba(255,255,255,0.65);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.9);border-radius:999px;padding:8px 16px;font-size:12.5px;font-weight:600;box-shadow:0 8px 22px rgba(14,62,46,0.12);">‹ desktopová verze</a>
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+  <div style="height:100%;position:relative;display:flex;flex-direction:column;overflow:hidden;background-color:#E2EDE4;background-image:radial-gradient(420px 300px at 15% 6%, rgba(255,255,255,0.55), transparent 70%),radial-gradient(460px 340px at 90% 30%, rgba(208,227,208,0.6), transparent 70%),radial-gradient(500px 380px at 60% 95%, rgba(242,246,230,0.65), transparent 70%);">
+    <div style="flex:1;overflow-y:auto;padding:64px 16px 118px;box-sizing:border-box;">
+
+      <sc-if value="{{ isPrehled }}" hint-placeholder-val="{{ true }}">
+        <div data-screen-label="Přehled (mobil)" style="animation:numo-fade 150ms ease-out;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 2px 4px;">
+            <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:19px;">numo</div>
+            <div style="text-align:right;"><div style="font-size:12px;color:#4C685C;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.85);border-radius:999px;padding:6px 12px;">říjen · den 21 z 30</div><div style="font-size:11px;color:#9DB3A5;margin-top:4px;">{{ freshLabel }}</div></div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.85);border-radius:22px;padding:20px;box-sizing:border-box;">
+            <div style="background:rgba(23,106,78,0.08);border:1px solid rgba(23,106,78,0.16);border-radius:16px;padding:15px 17px;box-sizing:border-box;">
+              <div style="font-size:11.5px;color:#176A4E;font-weight:600;">zbývá na útratu</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:40px;font-weight:500;line-height:1.05;letter-spacing:-1px;margin-top:2px;white-space:nowrap;">{{ naUtratuF }}<span style="font-size:19px;font-weight:400;color:#4C685C;"> Kč</span></div>
+            </div>
+            <div style="margin-top:9px;background:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.75);border-radius:16px;padding:15px 17px;box-sizing:border-box;position:relative;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="font-size:11.5px;color:#4C685C;font-weight:600;">denní limit</div>
+                <span onClick="{{ chainTipTap }}" style="display:inline-flex;align-items:center;padding:2px;cursor:pointer;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7E958A" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16"></line><line x1="12" y1="7.5" x2="12.01" y2="7.5"></line></svg>
+                </span>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:500;line-height:1.05;margin-top:2px;white-space:nowrap;">{{ tempoF }}<span style="font-size:16px;font-weight:400;color:#4C685C;"> Kč</span></div>
+              <sc-if value="{{ showProj }}" hint-placeholder-val="{{ true }}">
+                <div style="font-size:12.5px;margin-top:6px;line-height:1.5;color:{{ projColor }};">tímhle tempem skončíš <span style="white-space:nowrap;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:500;">{{ projF }} Kč</span>
+                  <span onClick="{{ projTipTap }}" style="display:inline-flex;align-items:center;vertical-align:-2px;padding:2px;cursor:pointer;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7E958A" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16"></line><line x1="12" y1="7.5" x2="12.01" y2="7.5"></line></svg>
+                  </span></span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ tipChain }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:60;background:rgba(255,255,255,0.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.95);border-radius:14px;padding:12px 14px;box-shadow:0 10px 28px rgba(14,62,46,0.18);font-size:12.5px;line-height:1.55;color:#0E3E2E;animation:numo-fade 120ms ease-out;">{{ chainTipText }}</div>
+              </sc-if>
+              <sc-if value="{{ tipProj }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:60;background:rgba(255,255,255,0.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.95);border-radius:14px;padding:12px 14px;box-shadow:0 10px 28px rgba(14,62,46,0.18);font-size:12.5px;line-height:1.55;color:#0E3E2E;animation:numo-fade 120ms ease-out;">{{ projTipText }}</div>
+              </sc-if>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+              <div style="font-size:12px;font-weight:600;color:#4C685C;">Obálky</div>
+              <div onClick="{{ goPlan }}" style="font-size:12px;color:#176A4E;font-weight:600;cursor:pointer;">rozpočty ›</div>
+            </div>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ limitRows }}" as="l" hint-placeholder-count="8">
+                <div style="padding:10px 2px;border-bottom:1px solid rgba(14,62,46,0.07);">
+                  <sc-if value="{{ l.isOn }}" hint-placeholder-val="{{ false }}">
+                    <div>
+                      <div style="display:flex;align-items:baseline;gap:7px;">
+                        <div style="width:7px;height:7px;border-radius:2.5px;flex-shrink:0;background:{{ l.color }};"></div>
+                        <div style="font-size:13px;font-weight:600;">{{ l.name }}</div>
+                        <div style="font-size:11.5px;white-space:nowrap;color:{{ l.stateColor }};">{{ l.stateText }}</div>
+                        <div style="margin-left:auto;padding-left:8px;font-family:'IBM Plex Mono',monospace;font-size:13.5px;white-space:nowrap;color:{{ l.primColor }};">{{ l.primary }}</div>
+                      </div>
+                      <div style="display:flex;height:5px;border-radius:99px;background:rgba(14,62,46,0.08);margin:8px 0 5px;overflow:hidden;">
+                        <div style="height:100%;background:#176A4E;width:{{ l.greenW }};"></div>
+                        <div style="height:100%;background:#A6432E;width:{{ l.overW }};"></div>
+                      </div>
+                      <div style="font-size:11px;color:#7E958A;line-height:1.6;">utraceno <span style="font-family:'IBM Plex Mono',monospace;">{{ l.spentF }}</span> z limitu <span style="font-family:'IBM Plex Mono',monospace;">{{ l.capF }}</span> Kč{{ l.extra }}</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ l.isEdit }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                      <div style="font-size:13px;font-weight:600;">{{ l.name }}</div>
+                      <input placeholder="limit v Kč" value="{{ limitVal }}" onChange="{{ setLimitVal }}" inputMode="numeric" style="width:96px;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.7);font-family:'IBM Plex Mono',monospace;font-size:13px;color:#0E3E2E;outline:none;" style-focus="border:1px solid rgba(23,106,78,0.5);box-shadow:0 0 0 3px rgba(26,127,90,0.16)">
+                      <div onClick="{{ l.save }}" style="padding:8px 13px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12px;font-weight:600;cursor:pointer;">uložit</div>
+                      <div onClick="{{ l.cancel }}" style="font-size:12px;color:#4C685C;cursor:pointer;padding:8px 2px;">zrušit</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ l.isOff }}" hint-placeholder-val="{{ true }}">
+                    <div onClick="{{ l.enable }}" style="display:flex;align-items:baseline;gap:8px;cursor:pointer;min-height:26px;">
+                      <div style="width:7px;height:7px;border-radius:2.5px;flex-shrink:0;background:{{ l.color }};"></div>
+                      <div style="font-size:13px;">{{ l.name }}</div>
+                      <div style="margin-left:auto;padding-left:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;white-space:nowrap;color:#4C685C;">{{ l.spentF }} Kč</div>
+                      <div style="font-size:12px;color:#5E7568;white-space:nowrap;">limit <span style="color:#7E958A;">›</span></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="font-size:12px;font-weight:600;color:#4C685C;margin-bottom:10px;">Bilance</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+              <div style="background:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.75);border-radius:13px;padding:11px 13px;box-sizing:border-box;">
+                <div style="font-size:11px;color:#4C685C;">rozpočet</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;line-height:1.15;margin-top:3px;white-space:nowrap;">63 000<span style="font-size:12px;font-weight:400;color:#4C685C;"> Kč</span></div>
+              </div>
+              <div style="background:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.75);border-radius:13px;padding:11px 13px;box-sizing:border-box;">
+                <div style="font-size:11px;color:#4C685C;">výdaje</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;line-height:1.15;margin-top:3px;white-space:nowrap;">{{ vydajeF }}<span style="font-size:12px;font-weight:400;color:#4C685C;"> Kč</span></div>
+              </div>
+              <div style="background:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.75);border-radius:13px;padding:11px 13px;box-sizing:border-box;">
+                <div style="font-size:11px;color:#4C685C;">plánované</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;line-height:1.15;margin-top:3px;white-space:nowrap;">{{ planovaneF }}<span style="font-size:12px;font-weight:400;color:#4C685C;"> Kč</span></div>
+                <div style="font-size:10px;color:#9DB3A5;margin-top:1px;">nezaplacené + z Plánu</div>
+              </div>
+              <div onClick="{{ goPlan }}" style="background:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.75);border-radius:13px;padding:11px 13px;box-sizing:border-box;cursor:pointer;">
+                <div style="font-size:11px;color:#4C685C;">spoření</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;line-height:1.15;margin-top:3px;white-space:nowrap;">{{ sporeniF }}<span style="font-size:12px;font-weight:400;color:#4C685C;"> Kč</span></div>
+              </div>
+            </div>
+            <div onClick="{{ resTipTap }}" style="margin-top:9px;background:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.75);border-radius:13px;padding:11px 13px;box-sizing:border-box;position:relative;cursor:pointer;">
+              <div style="display:flex;align-items:center;gap:5px;">
+                <div style="font-size:11px;color:#4C685C;">rezerva</div>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7E958A" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16"></line><line x1="12" y1="7.5" x2="12.01" y2="7.5"></line></svg>
+                <div style="margin-left:auto;font-size:10.5px;color:#9DB3A5;">celková pozice</div>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;line-height:1.15;margin-top:3px;white-space:nowrap;color:{{ reserveColor }};">{{ reserveF }}<span style="font-size:13px;font-weight:400;color:#4C685C;"> Kč</span></div>
+              <sc-if value="{{ resTipOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:60;background:rgba(255,255,255,0.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.95);border-radius:14px;padding:12px 14px;box-shadow:0 10px 28px rgba(14,62,46,0.18);font-size:12.5px;line-height:1.55;color:#0E3E2E;animation:numo-fade 120ms ease-out;">{{ resTipText }}</div>
+              </sc-if>
+            </div>
+            <div onClick="{{ goSubs }}" style="display:flex;align-items:center;gap:6px;margin-top:12px;padding-top:11px;border-top:1px solid rgba(14,62,46,0.08);font-size:12px;color:#5E7568;cursor:pointer;">povinnosti <span style="font-family:'IBM Plex Mono',monospace;color:#0E3E2E;">6/8</span> · zbývá <span style="font-family:'IBM Plex Mono',monospace;color:#0E3E2E;">{{ remainTotalF }} Kč</span><span style="margin-left:auto;color:#7E958A;">›</span></div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;"><div style="font-size:12px;font-weight:600;color:#4C685C;">Útraty podle dnů</div><div style="font-size:11.5px;color:#7E958A;">říjen · klepni na den</div></div>
+            <div style="width:227px;margin:0 auto;">
+              <div style="display:flex;gap:5px;margin-bottom:5px;">
+                <div style="width:24px;text-align:center;font-size:10px;color:#7E958A;">po</div><div style="width:24px;text-align:center;font-size:10px;color:#7E958A;">út</div><div style="width:24px;text-align:center;font-size:10px;color:#7E958A;">st</div><div style="width:24px;text-align:center;font-size:10px;color:#7E958A;">čt</div><div style="width:24px;text-align:center;font-size:10px;color:#7E958A;">pá</div><div style="width:24px;text-align:center;font-size:10px;color:#7E958A;">so</div><div style="width:24px;text-align:center;font-size:10px;color:#7E958A;">ne</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <sc-for list="{{ heatWeeks }}" as="wk" hint-placeholder-count="5">
+                  <div style="display:flex;gap:5px;">
+                    <sc-for list="{{ wk }}" as="c" hint-placeholder-count="7">
+                      <div onClick="{{ c.tap }}" style="width:24px;height:24px;border-radius:6px;box-sizing:border-box;position:relative;background:{{ c.bg }};border:{{ c.bd }};">
+                        <sc-if value="{{ c.showTip }}" hint-placeholder-val="{{ false }}">
+                          <div style="position:absolute;bottom:30px;left:50%;transform:translateX({{ c.tipShift }});width:190px;z-index:40;background:rgba(255,255,255,0.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.95);border-radius:14px;padding:12px 14px;box-shadow:0 10px 28px rgba(14,62,46,0.14);animation:numo-fade 150ms ease-out;">
+                            <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#4C685C;margin-bottom:6px;"><span>{{ c.tipLabel }}</span><span style="font-family:'IBM Plex Mono',monospace;color:#0E3E2E;">{{ c.tipTotal }}</span></div>
+                            <div style="display:flex;flex-direction:column;gap:3px;">
+                              <sc-for list="{{ c.tipRows }}" as="r" hint-placeholder-count="2">
+                                <div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.n }}</span><span style="font-family:'IBM Plex Mono',monospace;">{{ r.aF }}</span></div>
+                              </sc-for>
+                            </div>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:4px;font-size:11px;color:#5E7568;">
+              méně
+              <div style="width:11px;height:11px;border-radius:3px;background:#CFE3D5;"></div>
+              <div style="width:11px;height:11px;border-radius:3px;background:#A8CBB4;"></div>
+              <div style="width:11px;height:11px;border-radius:3px;background:#74AC8C;"></div>
+              <div style="width:11px;height:11px;border-radius:3px;background:#45906A;"></div>
+              <div style="width:11px;height:11px;border-radius:3px;background:#1C6B4A;"></div>
+              více
+            </div>
+          </div>
+
+
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="font-size:12px;font-weight:600;color:#4C685C;margin-bottom:8px;">Poslední transakce</div>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ feed }}" as="t" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(14,62,46,0.06);">
+                  <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;background:{{ t.avBg }};color:{{ t.avColor }};">{{ t.w }}</div>
+                  <div style="flex:1;min-width:0;"><div style="font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.n }}</div><div style="font-size:11px;color:#7E958A;">{{ t.day }}</div></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">−{{ t.aF }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div onClick="{{ goTransakce }}" style="padding-top:12px;font-size:13px;color:#176A4E;font-weight:600;cursor:pointer;">všechny transakce ›</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isTransakce }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Transakce (mobil)" style="animation:numo-fade 150ms ease-out;">
+          <div style="font-family:'Sora',sans-serif;font-weight:600;font-size:21px;margin:2px 2px 14px;">Transakce</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <input placeholder="hledat…" value="{{ q }}" onChange="{{ setQ }}" style="flex:1;min-width:0;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.6);font-family:'Instrument Sans',sans-serif;font-size:14px;color:#0E3E2E;outline:none;box-sizing:border-box;" style-focus="border:1px solid rgba(23,106,78,0.5);box-shadow:0 0 0 3px rgba(26,127,90,0.16)">
+            <div style="display:flex;gap:3px;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.9);border-radius:999px;padding:3px;">
+              <sc-for list="{{ whoOpts }}" as="o" hint-placeholder-count="3">
+                <div onClick="{{ o.click }}" style="position:relative;padding:6px 11px;border-radius:999px;font-size:13px;cursor:pointer;min-width:16px;text-align:center;">
+                  <sc-if value="{{ o.active }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:rgba(255,255,255,0.95);border-radius:999px;"></div></sc-if>
+                  <span style="position:relative;">{{ o.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div class="numo-chiprow" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:6px;margin-bottom:4px;">
+            <sc-for list="{{ catChips }}" as="o" hint-placeholder-count="9">
+              <div onClick="{{ o.click }}" style="position:relative;padding:7px 12px;border-radius:999px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.8);white-space:nowrap;flex-shrink:0;">
+                <sc-if value="{{ o.active }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:-1px;background:rgba(14,62,46,0.85);border-radius:999px;"></div></sc-if>
+                <span style="position:relative;color:{{ o.textColor }};">{{ o.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ txEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:32px 18px;text-align:center;">
+              <div style="font-size:14px;margin-bottom:10px;">Žádné transakce neodpovídají filtrům.</div>
+              <div onClick="{{ clearFilters }}" style="display:inline-block;font-size:13px;color:#176A4E;font-weight:600;cursor:pointer;padding:6px;">zrušit filtry</div>
+            </div>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ txGroups }}" as="g" hint-placeholder-count="4">
+              <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:18px;padding:12px 14px;box-sizing:border-box;">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding-bottom:6px;border-bottom:1px solid rgba(14,62,46,0.1);">
+                  <div style="font-size:12px;font-weight:600;color:#4C685C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ g.label }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4C685C;white-space:nowrap;flex-shrink:0;">−{{ g.totalF }} Kč</div>
+                </div>
+                <sc-for list="{{ g.rows }}" as="t" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:9px;padding:8px 0;min-height:44px;box-sizing:border-box;border-bottom:1px solid rgba(14,62,46,0.05);">
+                    <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;background:{{ t.avBg }};color:{{ t.avColor }};">{{ t.w }}</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.n }}</div>
+                      <div style="position:relative;display:inline-block;margin-top:3px;">
+                        <div onClick="{{ t.editToggle }}" style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.95);font-size:11px;cursor:pointer;">
+                          <div style="width:6px;height:6px;border-radius:2px;background:{{ t.catColor }};"></div>
+                          {{ t.c }}
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#7E958A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <sc-if value="{{ t.editorOpen }}" hint-placeholder-val="{{ false }}">
+                          <div style="position:absolute;top:calc(100% + 6px);left:0;z-index:50;width:180px;background:rgba(255,255,255,0.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.95);border-radius:14px;padding:6px;box-shadow:0 12px 32px rgba(14,62,46,0.16);animation:numo-fade 150ms ease-out;">
+                            <div style="font-size:10.5px;color:#7E958A;padding:5px 9px;">změnit kategorii — zapamatuji si pravidlo</div>
+                            <sc-for list="{{ t.opts }}" as="o" hint-placeholder-count="8">
+                              <div onClick="{{ o.pick }}" style="display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:9px;font-size:13px;cursor:pointer;">
+                                <div style="width:7px;height:7px;border-radius:2.5px;background:{{ o.color }};"></div>
+                                {{ o.label }}
+                              </div>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;flex-shrink:0;">−{{ t.aF }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPlan }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Plán (mobil)" style="animation:numo-fade 150ms ease-out;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-family:'Sora',sans-serif;font-weight:600;font-size:21px;margin:2px 2px 2px;">Plán</div>
+
+          <div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.85);border-radius:22px;padding:20px;box-sizing:border-box;position:relative;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="font-size:12px;font-weight:600;color:#4C685C;">Cíl měsíce</div>
+              <span onClick="{{ goalTipTap }}" style="display:inline-flex;align-items:center;padding:2px;cursor:pointer;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7E958A" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16"></line><line x1="12" y1="7.5" x2="12.01" y2="7.5"></line></svg>
+              </span>
+            </div>
+            <div style="display:flex;flex-direction:column;margin-top:8px;">
+              <div style="display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid rgba(14,62,46,0.08);">
+                <div style="font-size:12.5px;color:#4C685C;white-space:nowrap;">potřeba měsíce</div>
+                <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:500;line-height:1.05;letter-spacing:-0.5px;white-space:nowrap;">{{ goalF }}<span style="font-size:14px;font-weight:400;color:#4C685C;"> Kč</span></div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid rgba(14,62,46,0.08);">
+                <div>
+                  <div style="font-size:12.5px;color:#4C685C;">přišlo</div>
+                  <div style="font-size:10.5px;color:#9DB3A5;">skutečně připsáno</div>
+                </div>
+                <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:18px;color:#176A4E;white-space:nowrap;">{{ receivedF }}<span style="font-size:12px;color:#4C685C;"> Kč</span></div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid rgba(14,62,46,0.08);">
+                <div>
+                  <div style="font-size:12.5px;color:#4C685C;">na cestě</div>
+                  <div style="font-size:10.5px;color:#9DB3A5;">plánované příjmy měsíce</div>
+                </div>
+                <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:18px;color:#8A5F1E;white-space:nowrap;">{{ onWayF }}<span style="font-size:12px;color:#4C685C;"> Kč</span></div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:8px;padding:8px 0;">
+                <div style="font-size:12.5px;color:#4C685C;white-space:nowrap;">{{ missingLabel }}</div>
+                <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:18px;white-space:nowrap;color:{{ missingColor }};">{{ missingValF }}</div>
+              </div>
+            </div>
+            <div style="display:flex;height:8px;border-radius:99px;background:rgba(14,62,46,0.08);margin-top:6px;overflow:hidden;">
+              <div style="height:100%;background:#176A4E;width:{{ goalW }};"></div>
+              <div style="height:100%;background:rgba(201,154,75,0.55);width:{{ goalWayW }};"></div>
+            </div>
+            <sc-if value="{{ goalTipOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:52px;left:16px;right:16px;z-index:60;background:rgba(255,255,255,0.96);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.95);border-radius:14px;padding:12px 14px;box-shadow:0 10px 28px rgba(14,62,46,0.18);font-size:12.5px;line-height:1.55;color:#0E3E2E;animation:numo-fade 120ms ease-out;">{{ goalTipText }}</div>
+            </sc-if>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="font-size:12px;font-weight:600;color:#4C685C;margin-bottom:4px;">Spoření</div>
+            <div style="font-size:12px;color:#5E7568;margin-bottom:8px;">Tento měsíc chceme ušetřit:</div>
+            <div onClick="{{ setModeCastka }}" style="display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;">
+              <div style="width:18px;height:18px;border-radius:50%;border:2px solid {{ radAmtC }};display:flex;align-items:center;justify-content:center;box-sizing:border-box;flex-shrink:0;"><sc-if value="{{ castkaActive }}" hint-placeholder-val="{{ true }}"><div style="width:8px;height:8px;border-radius:50%;background:#176A4E;"></div></sc-if></div>
+              <div style="font-size:13.5px;width:84px;">částku</div>
+              <input value="{{ savAmt }}" onChange="{{ setSavAmt }}" inputMode="numeric" style="width:138px;box-sizing:border-box;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.7);font-family:'IBM Plex Mono',monospace;font-size:13px;color:#0E3E2E;outline:none;text-align:right;" style-focus="border:1px solid rgba(23,106,78,0.5);box-shadow:0 0 0 3px rgba(26,127,90,0.16)">
+              <div style="font-size:12.5px;color:#4C685C;width:18px;">Kč</div>
+            </div>
+            <div onClick="{{ setModeProcento }}" style="display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;">
+              <div style="width:18px;height:18px;border-radius:50%;border:2px solid {{ radPctC }};display:flex;align-items:center;justify-content:center;box-sizing:border-box;flex-shrink:0;"><sc-if value="{{ procentoActive }}" hint-placeholder-val="{{ false }}"><div style="width:8px;height:8px;border-radius:50%;background:#176A4E;"></div></sc-if></div>
+              <div style="font-size:13.5px;width:84px;">procento</div>
+              <input value="{{ savPct }}" onChange="{{ setSavPct }}" inputMode="numeric" style="width:138px;box-sizing:border-box;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.7);font-family:'IBM Plex Mono',monospace;font-size:13px;color:#0E3E2E;outline:none;text-align:right;" style-focus="border:1px solid rgba(23,106,78,0.5);box-shadow:0 0 0 3px rgba(26,127,90,0.16)">
+              <div style="font-size:12.5px;color:#4C685C;width:18px;">%</div>
+            </div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(14,62,46,0.08);display:flex;align-items:baseline;gap:8px;">
+              <div style="font-size:12.5px;color:#4C685C;">tento měsíc ušetříme</div>
+              <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:16px;color:#176A4E;">{{ sporeniF }} Kč</div>
+            </div>
+          </div>
+
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="font-size:12px;font-weight:600;color:#4C685C;margin-bottom:4px;">Plánované příjmy a výdaje</div>
+            <div style="font-size:12px;color:#5E7568;margin-bottom:8px;">výhled do dalších měsíců — nikam se nepropisuje</div>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ planningRows }}" as="p" hint-placeholder-count="3">
+                <div style="padding:8px 2px;border-bottom:1px solid rgba(14,62,46,0.07);">
+                  <sc-if value="{{ p.editing }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:7px;padding:2px 0;">
+                      <input value="{{ evN }}" onChange="{{ setEvN }}" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;width:100%;">
+                      <div style="display:flex;gap:7px;align-items:center;">
+                        <input value="{{ evMonth }}" onChange="{{ setEvMonth }}" placeholder="měsíc" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;flex:1;min-width:0;">
+                        <input value="{{ evA }}" onChange="{{ setEvA }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;width:88px;text-align:right;">
+                        <div onClick="{{ p.saveEdit }}" style="padding:8px 14px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">uložit</div>
+                        <div onClick="{{ p.cancelEdit }}" style="font-size:12.5px;color:#4C685C;cursor:pointer;padding:8px 4px;white-space:nowrap;">zrušit</div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ p.idle }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;align-items:center;gap:7px;min-height:36px;">
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.n }}</div>
+                        <div style="display:flex;align-items:center;gap:5px;margin-top:2px;">
+                          <div style="font-size:9.5px;color:#4C685C;background:rgba(14,62,46,0.06);border-radius:999px;padding:2px 7px;white-space:nowrap;">{{ p.freq }}</div>
+                          <sc-if value="{{ p.hasMonth }}" hint-placeholder-val="{{ false }}">
+                            <div style="font-size:9.5px;color:#8A5F1E;background:rgba(201,154,75,0.16);border-radius:999px;padding:2px 7px;white-space:nowrap;">{{ p.monthLbl }}</div>
+                          </sc-if>
+                        </div>
+                      </div>
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;white-space:nowrap;color:{{ p.color }};">{{ p.amtF }}</div>
+                      <div onClick="{{ p.startEdit }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;cursor:pointer;opacity:0.55;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4C685C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></div>
+                      <div onClick="{{ p.remove }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;cursor:pointer;opacity:0.55;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A6432E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;gap:8px;">
+                <input placeholder="název" value="{{ addName }}" onChange="{{ setAddName }}" style="flex:2;min-width:0;padding:9px 12px;border-radius:11px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.6);font-family:'Instrument Sans',sans-serif;font-size:13.5px;color:#0E3E2E;outline:none;box-sizing:border-box;" style-focus="border:1px solid rgba(23,106,78,0.5);box-shadow:0 0 0 3px rgba(26,127,90,0.16)">
+                <input placeholder="částka" value="{{ addAmt }}" onChange="{{ setAddAmt }}" inputMode="numeric" style="width:88px;padding:9px 12px;border-radius:11px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.6);font-family:'IBM Plex Mono',monospace;font-size:13px;color:#0E3E2E;outline:none;text-align:right;box-sizing:border-box;" style-focus="border:1px solid rgba(23,106,78,0.5);box-shadow:0 0 0 3px rgba(26,127,90,0.16)">
+                <div style="font-size:12.5px;color:#4C685C;align-self:center;">Kč</div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                <div style="display:flex;gap:2px;background:rgba(14,62,46,0.07);border-radius:999px;padding:3px;">
+                  <sc-for list="{{ typeOpts }}" as="o" hint-placeholder-count="2">
+                    <div onClick="{{ o.click }}" style="position:relative;padding:7px 13px;border-radius:999px;font-size:12px;cursor:pointer;">
+                      <sc-if value="{{ o.active }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:#FFFFFF;border-radius:999px;box-shadow:0 1px 3px rgba(14,62,46,0.12);"></div></sc-if>
+                      <span style="position:relative;color:{{ o.color }};font-weight:{{ o.weight }};">{{ o.label }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:2px;background:rgba(14,62,46,0.07);border-radius:999px;padding:3px;">
+                  <sc-for list="{{ freqOpts }}" as="o" hint-placeholder-count="2">
+                    <div onClick="{{ o.click }}" style="position:relative;padding:7px 13px;border-radius:999px;font-size:12px;cursor:pointer;">
+                      <sc-if value="{{ o.active }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:#FFFFFF;border-radius:999px;box-shadow:0 1px 3px rgba(14,62,46,0.12);"></div></sc-if>
+                      <span style="position:relative;color:{{ o.color }};font-weight:{{ o.weight }};">{{ o.label }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div onClick="{{ addItem }}" style="margin-left:auto;padding:9px 16px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;">Přidat</div>
+              </div>
+              <sc-if value="{{ addErr }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:#9A5B22;">{{ addErr }}</div></sc-if>
+            </div>
+          </div>
+
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="font-size:12px;font-weight:600;color:#4C685C;margin-bottom:4px;">Rozpočty</div>
+            <div style="font-size:12px;color:#5E7568;margin-bottom:8px;">Kategorie, jejich rozpočty a skutečný stav</div>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ limitRows }}" as="l" hint-placeholder-count="8">
+                <div style="padding:11px 2px;border-bottom:1px solid rgba(14,62,46,0.07);">
+                  <sc-if value="{{ l.isOn }}" hint-placeholder-val="{{ false }}">
+                    <div>
+                      <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;">
+                        <div style="font-size:13px;font-weight:600;">{{ l.name }}</div>
+                        <div style="font-size:11.5px;color:{{ l.stateColor }};">{{ l.stateText }}</div>
+                        <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:{{ l.primColor }};">{{ l.primary }}</div>
+                      </div>
+                      <div style="display:flex;height:5px;border-radius:99px;background:rgba(14,62,46,0.08);margin:8px 0 5px;overflow:hidden;">
+                        <div style="height:100%;background:#176A4E;width:{{ l.greenW }};"></div>
+                        <div style="height:100%;background:#A6432E;width:{{ l.overW }};"></div>
+                      </div>
+                      <div style="font-size:11px;color:#7E958A;line-height:1.6;letter-spacing:0.01em;margin-top:2px;">utraceno <span style="font-family:'IBM Plex Mono',monospace;">{{ l.spentF }}</span> z limitu <span style="font-family:'IBM Plex Mono',monospace;">{{ l.capF }}</span> Kč{{ l.extra }}</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ l.isEdit }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                      <div style="font-size:13px;font-weight:600;">{{ l.name }}</div>
+                      <input placeholder="limit v Kč" value="{{ limitVal }}" onChange="{{ setLimitVal }}" inputMode="numeric" style="width:96px;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.7);font-family:'IBM Plex Mono',monospace;font-size:13px;color:#0E3E2E;outline:none;" style-focus="border:1px solid rgba(23,106,78,0.5);box-shadow:0 0 0 3px rgba(26,127,90,0.16)">
+                      <div onClick="{{ l.save }}" style="padding:8px 13px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12px;font-weight:600;cursor:pointer;">uložit</div>
+                      <div onClick="{{ l.cancel }}" style="font-size:12px;color:#4C685C;cursor:pointer;padding:8px 2px;">zrušit</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ l.isOff }}" hint-placeholder-val="{{ false }}">
+                    <div onClick="{{ l.enable }}" style="display:flex;align-items:center;gap:8px;cursor:pointer;min-height:26px;">
+                      <div style="font-size:13px;color:#7E958A;">{{ l.name }}</div>
+                      <div style="margin-left:auto;font-size:12px;color:#5E7568;">nastavit limit <span style="color:#7E958A;">›</span></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px;padding:0 6px 2px;">
+            <div style="font-size:12.5px;color:#4C685C;">výsledek měsíce podle plánu</div>
+            <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:16px;color:{{ planResultColor }};">{{ planResultF }} Kč</div>
+          </div>
+        </div>
+      </sc-if>
+
+
+      <sc-if value="{{ isSubs }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Předplatná (mobil)" style="animation:numo-fade 150ms ease-out;display:flex;flex-direction:column;gap:12px;">
+          <div style="margin:2px 2px 2px;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div onClick="{{ goVic }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin-left:-8px;cursor:pointer;color:#176A4E;font-size:20px;">‹</div>
+              <div style="font-family:'Sora',sans-serif;font-weight:600;font-size:21px;">Pravidelné</div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px 12px;margin-top:5px;font-size:11.5px;color:#5E7568;">
+              <div style="white-space:nowrap;">předplatná <span style="font-family:'IBM Plex Mono',monospace;color:#0E3E2E;">{{ subsTotalF }} Kč</span>/měs</div>
+              <div style="white-space:nowrap;">měsíční platby <span style="font-family:'IBM Plex Mono',monospace;color:#0E3E2E;">{{ billsTotalF }} Kč</span></div>
+              <div style="white-space:nowrap;">{{ billsPaidLine }}</div>
+              <div style="white-space:nowrap;">zbývá zaplatit <span style="font-family:'IBM Plex Mono',monospace;color:#0E3E2E;">{{ remainTotalF }} Kč</span></div>
+            </div>
+          </div>
+
+          <sc-if value="{{ detectShow }}" hint-placeholder-val="{{ false }}">
+            <div style="background:rgba(255,243,219,0.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.9);border-radius:20px;padding:16px;box-sizing:border-box;">
+              <div style="display:flex;gap:10px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A5B22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13.5px;font-weight:600;">Vypadá to na předplatné</div>
+                  <div style="font-size:12.5px;color:#4C685C;margin-top:3px;line-height:1.5;">NVIDIA <span style="font-family:'IBM Plex Mono',monospace;color:#0E3E2E;">598 Kč</span>, každý měsíc kolem 21. Přidat mezi předplatná?</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:12px;">
+                <div onClick="{{ detectAdd }}" style="padding:9px 16px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;">Přidat</div>
+                <div onClick="{{ detectNo }}" style="padding:9px 10px;font-size:12.5px;color:#4C685C;font-weight:600;cursor:pointer;">Není předplatné</div>
+              </div>
+              <div style="font-size:11px;color:#7E958A;margin-top:8px;">Skutečné platby se automaticky párují na pravidelné.</div>
+            </div>
+          </sc-if>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;"><div style="font-size:12px;font-weight:600;color:#4C685C;">Předplatná</div><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;">{{ subsTotalF }} Kč<span style="font-family:'Instrument Sans',sans-serif;color:#7E958A;font-size:11.5px;"> /měs</span></div></div>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ subsManage }}" as="s" hint-placeholder-count="6">
+                <div style="padding:6px 2px;border-bottom:1px solid rgba(14,62,46,0.06);">
+                  <sc-if value="{{ s.editing }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:7px;padding:2px 0;">
+                      <input value="{{ evN }}" onChange="{{ setEvN }}" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;width:100%;">
+                      <div style="display:flex;gap:7px;align-items:center;">
+                        <input value="{{ evDay }}" onChange="{{ setEvDay }}" inputMode="numeric" placeholder="den" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;width:60px;text-align:right;">
+                        <input value="{{ evA }}" onChange="{{ setEvA }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;flex:1;min-width:0;text-align:right;">
+                        <div onClick="{{ s.saveEdit }}" style="padding:8px 14px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">uložit</div>
+                        <div onClick="{{ s.cancelEdit }}" style="font-size:12.5px;color:#4C685C;cursor:pointer;padding:8px 4px;white-space:nowrap;">zrušit</div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ s.idle }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;align-items:center;gap:6px;min-height:38px;">
+                      <div style="font-size:13.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:{{ s.decor }};color:{{ s.nameColor }};">{{ s.name }}</div>
+                      <div style="width:26px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#7E958A;">{{ s.dayF }}</div>
+                      <div style="width:62px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;text-decoration:{{ s.decor }};color:{{ s.amtColor }};">{{ s.amtF }} Kč</div>
+                      <div onClick="{{ s.toggle }}" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;cursor:pointer;flex-shrink:0;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ s.iconC }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="6" y1="18" x2="18" y2="6"></line></svg>
+                      </div>
+                      <div onClick="{{ s.startEdit }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;cursor:pointer;opacity:0.55;flex-shrink:0;width:30px;height:30px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4C685C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></div>
+                      <div onClick="{{ s.del }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;cursor:pointer;opacity:0.55;flex-shrink:0;width:30px;height:30px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A6432E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ subsAdd.closed }}" hint-placeholder-val="{{ true }}">
+                <div onClick="{{ subsAdd.start }}" style="display:flex;align-items:center;gap:7px;padding:12px 2px 2px;font-size:12.5px;color:#5E7568;cursor:pointer;min-height:44px;box-sizing:border-box;">+ přidat předplatné</div>
+              </sc-if>
+              <sc-if value="{{ subsAdd.open }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:7px;padding:12px 2px 2px;">
+                  <input placeholder="název" value="{{ avN }}" onChange="{{ setAvN }}" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;width:100%;">
+                  <div style="display:flex;gap:7px;align-items:center;">
+                    <input placeholder="den" value="{{ avDay }}" onChange="{{ setAvDay }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;width:60px;text-align:right;">
+                    <input placeholder="částka" value="{{ avA }}" onChange="{{ setAvA }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;flex:1;min-width:0;text-align:right;">
+                    <div onClick="{{ subsAdd.save }}" style="padding:8px 14px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">Přidat</div>
+                    <div onClick="{{ subsAdd.cancel }}" style="font-size:12.5px;color:#4C685C;cursor:pointer;padding:8px 4px;white-space:nowrap;">zrušit</div>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(14,62,46,0.08);">
+              <div style="display:flex;align-items:baseline;gap:8px;">
+                <div style="font-size:12.5px;color:#4C685C;">{{ simLabel }}</div>
+                <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:16px;color:#176A4E;white-space:nowrap;">{{ simMonthF }} Kč<span style="font-family:'Instrument Sans',sans-serif;font-size:11px;color:#7E958A;">/měs</span></div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px;">
+                <sc-if value="{{ simAny }}" hint-placeholder-val="{{ false }}">
+                  <div onClick="{{ clearSim }}" style="font-size:12px;color:#176A4E;font-weight:600;cursor:pointer;">zrušit simulaci</div>
+                </sc-if>
+                <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#4C685C;white-space:nowrap;">{{ simYearF }} Kč<span style="font-family:'Instrument Sans',sans-serif;font-size:11px;color:#7E958A;">/rok</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;"><div style="font-size:12px;font-weight:600;color:#4C685C;">Měsíční platby</div><div style="font-size:12px;">zaplaceno <span style="font-family:'IBM Plex Mono',monospace;">6/8</span></div></div>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ checklist }}" as="b" hint-placeholder-count="8">
+                <div style="padding:6px 2px;border-bottom:1px solid rgba(14,62,46,0.06);">
+                  <sc-if value="{{ b.editing }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:7px;padding:2px 0;">
+                      <input value="{{ evN }}" onChange="{{ setEvN }}" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;width:100%;">
+                      <div style="display:flex;gap:7px;align-items:center;">
+                        <input value="{{ evDay }}" onChange="{{ setEvDay }}" inputMode="numeric" placeholder="den" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;width:60px;text-align:right;">
+                        <input value="{{ evA }}" onChange="{{ setEvA }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;flex:1;min-width:0;text-align:right;">
+                        <div onClick="{{ b.saveEdit }}" style="padding:8px 14px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">uložit</div>
+                        <div onClick="{{ b.cancelEdit }}" style="font-size:12.5px;color:#4C685C;cursor:pointer;padding:8px 4px;white-space:nowrap;">zrušit</div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ b.idle }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;align-items:center;gap:8px;min-height:38px;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ b.iconC }}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;" dangerouslySetInnerHTML="{{ b.iconHtml }}"></svg>
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ b.n }}</div>
+                        <div style="font-size:11px;color:{{ b.stateColor }};">{{ b.stateText }}</div>
+                      </div>
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#4C685C;flex-shrink:0;">{{ b.amtF }} Kč</div>
+                      <div onClick="{{ b.startEdit }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;cursor:pointer;opacity:0.55;flex-shrink:0;width:30px;height:30px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4C685C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></div>
+                      <div onClick="{{ b.del }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;cursor:pointer;opacity:0.55;flex-shrink:0;width:30px;height:30px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A6432E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-for list="{{ debtBills }}" as="d" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:9px;padding:8px 2px;border-bottom:1px solid rgba(14,62,46,0.06);min-height:36px;box-sizing:border-box;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9DB3A5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="9"></circle></svg>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;color:#4C685C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ d.n }}</div>
+                    <div style="font-size:11px;color:#7E958A;">{{ d.dayF }}</div>
+                  </div>
+                  <div onClick="{{ goDluhy }}" style="font-size:10px;color:#8A5F1E;background:rgba(201,154,75,0.16);border-radius:999px;padding:2px 8px;cursor:pointer;flex-shrink:0;">dluh</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#7E958A;flex-shrink:0;">{{ d.amtF }} Kč</div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ billsAdd.closed }}" hint-placeholder-val="{{ true }}">
+                <div onClick="{{ billsAdd.start }}" style="display:flex;align-items:center;gap:7px;padding:12px 2px 2px;font-size:12.5px;color:#5E7568;cursor:pointer;min-height:44px;box-sizing:border-box;">+ přidat platbu</div>
+              </sc-if>
+              <sc-if value="{{ billsAdd.open }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:7px;padding:12px 2px 2px;">
+                  <input placeholder="název" value="{{ avN }}" onChange="{{ setAvN }}" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;width:100%;">
+                  <div style="display:flex;gap:7px;align-items:center;">
+                    <input placeholder="den" value="{{ avDay }}" onChange="{{ setAvDay }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;width:60px;text-align:right;">
+                    <input placeholder="částka" value="{{ avA }}" onChange="{{ setAvA }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;flex:1;min-width:0;text-align:right;">
+                    <div onClick="{{ billsAdd.save }}" style="padding:8px 14px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">Přidat</div>
+                    <div onClick="{{ billsAdd.cancel }}" style="font-size:12.5px;color:#4C685C;cursor:pointer;padding:8px 4px;white-space:nowrap;">zrušit</div>
+                  </div>
+                </div>
+              </sc-if>
+              <div style="font-size:10.5px;color:#9DB3A5;padding:10px 2px 0;line-height:1.5;">splátky dluhů jsou uvnitř platby ČSSZ + VZP — do součtů se nepřičítají</div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="font-size:12px;font-weight:600;color:#4C685C;margin-bottom:4px;">Roční platby</div>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ annualManage }}" as="a" hint-placeholder-count="4">
+                <div style="padding:6px 2px;border-bottom:1px solid rgba(14,62,46,0.06);">
+                  <sc-if value="{{ a.editing }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:7px;padding:2px 0;">
+                      <input value="{{ evN }}" onChange="{{ setEvN }}" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;width:100%;">
+                      <div style="display:flex;gap:7px;align-items:center;">
+                        <input value="{{ evMonth }}" onChange="{{ setEvMonth }}" placeholder="měsíc" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;flex:1;min-width:0;">
+                        <input value="{{ evA }}" onChange="{{ setEvA }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;width:88px;text-align:right;">
+                        <div onClick="{{ a.saveEdit }}" style="padding:8px 14px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">uložit</div>
+                        <div onClick="{{ a.cancelEdit }}" style="font-size:12.5px;color:#4C685C;cursor:pointer;padding:8px 4px;white-space:nowrap;">zrušit</div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ a.idle }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;align-items:center;gap:7px;min-height:38px;">
+                      <div style="font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ a.n }}</div>
+                      <div style="font-size:10.5px;color:#8A5F1E;background:rgba(201,154,75,0.16);border-radius:999px;padding:2px 8px;white-space:nowrap;">{{ a.month }}</div>
+                      <div style="width:62px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#4C685C;">{{ a.amtF }} Kč</div>
+                      <div onClick="{{ a.startEdit }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;cursor:pointer;opacity:0.55;flex-shrink:0;width:30px;height:30px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4C685C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></div>
+                      <div onClick="{{ a.del }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;cursor:pointer;opacity:0.55;flex-shrink:0;width:30px;height:30px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A6432E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ annualAdd.closed }}" hint-placeholder-val="{{ true }}">
+                <div onClick="{{ annualAdd.start }}" style="display:flex;align-items:center;gap:7px;padding:12px 2px 2px;font-size:12.5px;color:#5E7568;cursor:pointer;min-height:44px;box-sizing:border-box;">+ přidat roční platbu</div>
+              </sc-if>
+              <sc-if value="{{ annualAdd.open }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:7px;padding:12px 2px 2px;">
+                  <input placeholder="název" value="{{ avN }}" onChange="{{ setAvN }}" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;width:100%;">
+                  <div style="display:flex;gap:7px;align-items:center;">
+                    <input placeholder="měsíc" value="{{ avMonth }}" onChange="{{ setAvMonth }}" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;flex:1;min-width:0;">
+                    <input placeholder="částka" value="{{ avA }}" onChange="{{ setAvA }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;width:88px;text-align:right;">
+                    <div onClick="{{ annualAdd.save }}" style="padding:8px 14px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">Přidat</div>
+                    <div onClick="{{ annualAdd.cancel }}" style="font-size:12.5px;color:#4C685C;cursor:pointer;padding:8px 4px;white-space:nowrap;">zrušit</div>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isVyvoj }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Vývoj (mobil)" style="animation:numo-fade 150ms ease-out;display:flex;flex-direction:column;gap:12px;">
+          <div style="margin:2px 2px 2px;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div onClick="{{ goVic }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin-left:-8px;cursor:pointer;color:#176A4E;font-size:20px;">‹</div>
+              <div style="font-family:'Sora',sans-serif;font-weight:600;font-size:21px;">Vývoj</div>
+            </div>
+            <div style="font-size:11px;color:#9DB3A5;margin-top:4px;">skutečnost zeleně · předpověď okrově</div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px 14px;box-sizing:border-box;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;padding:0 4px;"><div style="font-size:12px;font-weight:600;color:#4C685C;">Cashflow</div></div>
+            <div style="position:relative;">
+              <svg width="100%" viewBox="0 0 360 200" preserveAspectRatio="none" style="display:block;">
+                <rect x="40" y="{{ cf.zeroY }}" width="306" height="{{ cf.negH }}" fill="rgba(166,67,46,0.06)"></rect>
+                <sc-for list="{{ cf.grid }}" as="g" hint-placeholder-count="4">
+                  <line x1="40" x2="346" y1="{{ g.y }}" y2="{{ g.y }}" stroke="{{ g.stroke }}" stroke-width="1" stroke-dasharray="{{ g.dash }}"></line>
+                </sc-for>
+                <path d="{{ cf.path }}" fill="none" stroke="#176A4E" stroke-width="2" stroke-linecap="round"></path>
+                <sc-for list="{{ cf.pts }}" as="p" hint-placeholder-count="6">
+                  <circle cx="{{ p.x }}" cy="{{ p.y }}" r="14" fill="transparent" onClick="{{ p.click }}" style="cursor:pointer;"></circle>
+                  <circle cx="{{ p.x }}" cy="{{ p.y }}" r="{{ p.ringR }}" fill="none" stroke="{{ p.fill }}" stroke-width="1.5" opacity="{{ p.ringOp }}" style="pointer-events:none;transition:opacity 150ms;"></circle>
+                  <circle cx="{{ p.x }}" cy="{{ p.y }}" r="4" fill="{{ p.fill }}" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" style="pointer-events:none;"></circle>
+                </sc-for>
+              </svg>
+              <sc-for list="{{ cf.grid }}" as="g" hint-placeholder-count="4">
+                <div style="position:absolute;left:0;top:{{ g.topPct }};width:{{ cf.axisW }};transform:translateY(-50%);text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#7E958A;pointer-events:none;">{{ g.label }}</div>
+              </sc-for>
+              <sc-for list="{{ cf.pts }}" as="p" hint-placeholder-count="6">
+                <div style="position:absolute;left:{{ p.leftPct }};top:{{ cf.monthTop }};transform:translateX(-50%);font-size:10px;color:#4C685C;white-space:nowrap;pointer-events:none;">{{ p.m }}</div>
+                <div style="position:absolute;left:{{ p.leftPct }};top:{{ p.valTop }};transform:translateX({{ p.shift }});background:rgba(255,255,255,0.8);border-radius:6px;padding:1px 5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ p.lblFill }};white-space:nowrap;opacity:{{ p.lblOp }};transition:opacity 120ms;pointer-events:none;">{{ p.vF }}</div>
+              </sc-for>
+              <sc-if value="{{ cf.panel.show }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:{{ cf.panel.left }};top:{{ cf.panel.top }};transform:translate({{ cf.panel.tx }},calc(-100% - 12px));width:200px;z-index:40;background:rgba(255,255,255,0.92);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.95);border-radius:14px;padding:10px 12px;box-shadow:0 10px 28px rgba(14,62,46,0.16);pointer-events:none;animation:numo-fade 120ms ease-out;">
+                  <div style="font-size:12px;font-weight:600;margin-bottom:5px;">{{ cf.panel.title }}</div>
+                  <sc-for list="{{ cf.panel.rows }}" as="r" hint-placeholder-count="3">
+                    <div style="display:flex;justify-content:space-between;gap:10px;font-size:11.5px;padding:1.5px 0;"><span style="color:#4C685C;">{{ r.l }}</span><span style="font-family:'IBM Plex Mono',monospace;color:{{ r.c }};">{{ r.v }}</span></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px 14px;box-sizing:border-box;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;padding:0 4px;">
+              <div>
+                <div style="font-size:12px;font-weight:600;color:#4C685C;">Hotovost v čase</div>
+                <div style="font-size:10px;color:#9DB3A5;margin-top:2px;">cashflow = kolik měsíc vydělal · hotovost = kolik je na účtech</div>
+              </div>
+              <div style="font-size:10.5px;color:#7E958A;white-space:nowrap;">dnes <span style="font-family:'IBM Plex Mono',monospace;color:#0E3E2E;">{{ cashF }} Kč</span></div>
+            </div>
+            <sc-if value="{{ cashWarnShow }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:7px;margin:0 4px 10px;padding:9px 11px;border-radius:12px;background:rgba(255,243,219,0.6);border:1px solid rgba(201,154,75,0.3);font-size:11.5px;line-height:1.4;color:#8A5F1E;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9A5B22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 9v4"></path><path d="M12 17h.01"></path><circle cx="12" cy="12" r="9"></circle></svg>
+                {{ cashWarn }}
+              </div>
+            </sc-if>
+            <div style="position:relative;">
+              <svg width="100%" viewBox="0 0 360 204" preserveAspectRatio="none" style="display:block;">
+                <rect x="44" y="{{ resc.zeroY }}" width="302" height="{{ resc.negH }}" fill="rgba(166,67,46,0.06)"></rect>
+                <sc-for list="{{ resc.grid }}" as="g" hint-placeholder-count="5">
+                  <line x1="44" x2="346" y1="{{ g.y }}" y2="{{ g.y }}" stroke="{{ g.stroke }}" stroke-width="1" stroke-dasharray="{{ g.dash }}"></line>
+                </sc-for>
+                <path d="{{ resc.path }}" fill="none" stroke="#176A4E" stroke-width="2" stroke-linecap="round"></path>
+                <sc-for list="{{ resc.pts }}" as="p" hint-placeholder-count="7">
+                  <circle cx="{{ p.x }}" cy="{{ p.y }}" r="14" fill="transparent" onClick="{{ p.click }}" style="cursor:pointer;"></circle>
+                  <circle cx="{{ p.x }}" cy="{{ p.y }}" r="{{ p.ringR }}" fill="none" stroke="{{ p.fill }}" stroke-width="1.5" opacity="{{ p.ringOp }}" style="pointer-events:none;transition:opacity 150ms;"></circle>
+                  <circle cx="{{ p.x }}" cy="{{ p.y }}" r="4" fill="{{ p.fill }}" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" style="pointer-events:none;"></circle>
+                </sc-for>
+              </svg>
+              <sc-for list="{{ resc.grid }}" as="g" hint-placeholder-count="5">
+                <div style="position:absolute;left:0;top:{{ g.topPct }};width:{{ resc.axisW }};transform:translateY(-50%);text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#7E958A;pointer-events:none;">{{ g.label }}</div>
+              </sc-for>
+              <sc-for list="{{ resc.pts }}" as="p" hint-placeholder-count="7">
+                <div style="position:absolute;left:{{ p.leftPct }};top:{{ resc.monthTop }};transform:translateX(-50%);font-size:10px;color:#4C685C;white-space:nowrap;pointer-events:none;">{{ p.mFull }}</div>
+                <div style="position:absolute;left:{{ p.leftPct }};top:{{ p.valTop }};transform:translateX({{ p.shift }});background:rgba(255,255,255,0.8);border-radius:6px;padding:1px 4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:{{ p.lblFill }};white-space:nowrap;opacity:{{ p.lblOp }};transition:opacity 120ms;pointer-events:none;">{{ p.vF }}</div>
+              </sc-for>
+              <sc-if value="{{ resc.panel.show }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:{{ resc.panel.left }};top:{{ resc.panel.top }};transform:translate({{ resc.panel.tx }},calc(-100% - 12px));width:200px;z-index:40;background:rgba(255,255,255,0.92);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.95);border-radius:14px;padding:10px 12px;box-shadow:0 10px 28px rgba(14,62,46,0.16);pointer-events:none;animation:numo-fade 120ms ease-out;">
+                  <div style="font-size:12px;font-weight:600;margin-bottom:5px;">{{ resc.panel.title }}</div>
+                  <sc-for list="{{ resc.panel.rows }}" as="r" hint-placeholder-count="3">
+                    <div style="display:flex;justify-content:space-between;gap:10px;font-size:11.5px;padding:1.5px 0;"><span style="color:#4C685C;">{{ r.l }}</span><span style="font-family:'IBM Plex Mono',monospace;color:{{ r.c }};">{{ r.v }}</span></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="font-size:12px;font-weight:600;color:#4C685C;margin-bottom:2px;">Trendy kategorií</div>
+            <div style="font-size:11.5px;color:#5E7568;margin-bottom:12px;">útraty po měsících, květen → říjen</div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <sc-for list="{{ trendRows }}" as="t" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;width:86px;flex-shrink:0;">
+                    <div style="width:7px;height:7px;border-radius:2.5px;flex-shrink:0;background:{{ t.color }};"></div>
+                    <div style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.name }}</div>
+                  </div>
+                  <svg width="140" height="30" viewBox="0 0 140 30" style="display:block;flex-shrink:0;">
+                    <path d="{{ t.path }}" fill="none" stroke="{{ t.color }}" stroke-width="2" stroke-linecap="round"></path>
+                    <circle cx="{{ t.dotX }}" cy="{{ t.dotY }}" r="3" fill="{{ t.color }}" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"></circle>
+                  </svg>
+                  <div style="margin-left:auto;text-align:right;">
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;white-space:nowrap;">{{ t.lastF }} Kč</div>
+                    <div style="font-size:10px;color:{{ t.deltaColor }};white-space:nowrap;">{{ t.deltaF }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="font-size:12px;font-weight:600;color:#4C685C;margin-bottom:2px;">Průměry</div>
+            <div style="font-size:11.5px;color:#5E7568;margin-bottom:6px;">Průměry z posledních 6 měsíců</div>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ avgRows }}" as="a" hint-placeholder-count="9">
+                <div style="display:flex;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid rgba(14,62,46,0.06);font-size:13px;">
+                  <div style="flex:1;">{{ a.n }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;white-space:nowrap;">{{ a.amtF }} Kč<span style="font-family:'Instrument Sans',sans-serif;color:#7E958A;font-size:11px;">/měs</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isDluhy }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Dluhy (mobil)" style="animation:numo-fade 150ms ease-out;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;gap:4px;margin:2px 2px 2px;">
+            <div onClick="{{ goVic }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin-left:-8px;cursor:pointer;color:#176A4E;font-size:20px;">‹</div>
+            <div style="font-family:'Sora',sans-serif;font-weight:600;font-size:21px;">Dluhy</div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.85);border-radius:22px;padding:20px;box-sizing:border-box;">
+            <div style="font-size:12px;font-weight:600;color:#4C685C;margin-bottom:10px;">Souhrn</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+              <div style="background:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.75);border-radius:13px;padding:11px 13px;box-sizing:border-box;">
+                <div style="font-size:11px;color:#4C685C;">celkem dlužíme</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;line-height:1.15;margin-top:3px;white-space:nowrap;color:#A6432E;">{{ debtTotalF }}<span style="font-size:12px;font-weight:400;color:#4C685C;"> Kč</span></div>
+              </div>
+              <div style="background:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.75);border-radius:13px;padding:11px 13px;box-sizing:border-box;">
+                <div style="font-size:11px;color:#4C685C;">splácíme</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;line-height:1.15;margin-top:3px;white-space:nowrap;">{{ debtPayF }}<span style="font-size:12px;font-weight:400;color:#4C685C;"> /měs</span></div>
+              </div>
+            </div>
+            <div style="margin-top:9px;background:rgba(23,106,78,0.08);border:1px solid rgba(23,106,78,0.16);border-radius:16px;padding:14px 16px;box-sizing:border-box;">
+              <div style="font-size:11.5px;color:#176A4E;font-weight:600;">čistí</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:500;line-height:1.1;margin-top:2px;white-space:nowrap;">~{{ cleanLabel }}</div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:18px;box-sizing:border-box;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+              <div style="font-size:12px;font-weight:600;color:#4C685C;">Seznam dluhů</div>
+              <div style="font-size:10.5px;color:#7E958A;">v Pravidelných jako splátky</div>
+            </div>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ debtRows }}" as="d" hint-placeholder-count="2">
+                <div style="padding:12px 2px;border-bottom:1px solid rgba(14,62,46,0.07);">
+                  <sc-if value="{{ d.editing }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:7px;">
+                      <input value="{{ evN }}" onChange="{{ setEvN }}" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;width:100%;">
+                      <div style="display:flex;gap:7px;">
+                        <input value="{{ evRest }}" onChange="{{ setEvRest }}" inputMode="numeric" placeholder="zbývá" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;flex:1;min-width:0;text-align:right;">
+                        <input value="{{ evPay }}" onChange="{{ setEvPay }}" inputMode="numeric" placeholder="splátka" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;flex:1;min-width:0;text-align:right;">
+                        <input value="{{ evDay }}" onChange="{{ setEvDay }}" inputMode="numeric" placeholder="den" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;width:56px;text-align:right;">
+                      </div>
+                      <div style="display:flex;gap:7px;align-items:center;">
+                        <div onClick="{{ d.saveEdit }}" style="padding:8px 14px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">uložit</div>
+                        <div onClick="{{ d.cancelEdit }}" style="font-size:12.5px;color:#4C685C;cursor:pointer;padding:8px 4px;white-space:nowrap;">zrušit</div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ d.idle }}" hint-placeholder-val="{{ true }}">
+                    <div>
+                      <div style="display:flex;align-items:baseline;gap:8px;">
+                        <div style="font-size:13.5px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ d.n }}</div>
+                        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;white-space:nowrap;">{{ d.restF }} Kč</div>
+                        <div onClick="{{ d.startEdit }}" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;cursor:pointer;opacity:0.55;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4C685C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></div>
+                        <div onClick="{{ d.remove }}" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;cursor:pointer;opacity:0.55;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A6432E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></div>
+                      </div>
+                      <div style="font-size:11px;color:#5E7568;margin-top:4px;">splaceno <span style="font-family:'IBM Plex Mono',monospace;color:#176A4E;">{{ d.paidF }}</span> z <span style="font-family:'IBM Plex Mono',monospace;">{{ d.totalF }}</span> Kč</div>
+                      <div style="display:flex;height:5px;border-radius:99px;background:rgba(14,62,46,0.08);margin:7px 0 7px;overflow:hidden;">
+                        <div style="height:100%;background:#176A4E;width:{{ d.paidW }};"></div>
+                      </div>
+                      <div style="display:flex;align-items:baseline;gap:8px;font-size:11px;color:#7E958A;flex-wrap:wrap;">
+                        <div style="white-space:nowrap;">splátka <span style="font-family:'IBM Plex Mono',monospace;color:#4C685C;">{{ d.payF }} Kč</span>/měs · {{ d.dayF }} den</div>
+                        <div style="white-space:nowrap;">čistý <span style="color:#176A4E;">~{{ d.cleanLabel }}</span></div>
+                      </div>
+                      <div style="font-size:10.5px;color:#9DB3A5;margin-top:3px;font-family:'IBM Plex Mono',monospace;">{{ d.acc }} · {{ d.vs }}</div>
+                      <div onClick="{{ d.openPay }}" style="font-size:12px;color:#176A4E;font-weight:600;cursor:pointer;padding:10px 0 2px;min-height:38px;box-sizing:border-box;">zaznamenat platbu</div>
+                      <sc-if value="{{ d.payOpen }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-direction:column;gap:7px;margin-top:4px;padding:11px;border-radius:13px;background:rgba(23,106,78,0.06);border:1px solid rgba(23,106,78,0.14);">
+                          <div style="display:flex;gap:7px;">
+                            <input value="{{ pvA }}" onChange="{{ setPvA }}" inputMode="numeric" placeholder="částka" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;flex:1;min-width:0;text-align:right;">
+                            <input value="{{ pvD }}" onChange="{{ setPvD }}" placeholder="datum" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;flex:1;min-width:0;">
+                          </div>
+                          <div style="display:flex;gap:7px;align-items:center;">
+                            <div onClick="{{ d.savePay }}" style="padding:8px 14px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">Zaznamenat</div>
+                            <div onClick="{{ d.cancelPay }}" style="font-size:12.5px;color:#4C685C;cursor:pointer;padding:8px 4px;white-space:nowrap;">zrušit</div>
+                          </div>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ debtNone }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:14px 2px;font-size:13px;color:#5E7568;">–</div>
+            </sc-if>
+            <sc-if value="{{ debtsAdd.closed }}" hint-placeholder-val="{{ true }}">
+              <div onClick="{{ debtsAdd.start }}" style="display:flex;align-items:center;gap:7px;padding:12px 2px 2px;font-size:12.5px;color:#5E7568;cursor:pointer;min-height:44px;box-sizing:border-box;">+ přidat dluh</div>
+            </sc-if>
+            <sc-if value="{{ debtsAdd.open }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:7px;padding-top:12px;">
+                <input placeholder="věřitel" value="{{ avN }}" onChange="{{ setAvN }}" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;width:100%;">
+                <div style="display:flex;gap:7px;">
+                  <input placeholder="zbývá" value="{{ avRest }}" onChange="{{ setAvRest }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;flex:1;min-width:0;text-align:right;">
+                  <input placeholder="splátka" value="{{ avPay }}" onChange="{{ setAvPay }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;flex:1;min-width:0;text-align:right;">
+                  <input placeholder="den" value="{{ avDay }}" onChange="{{ setAvDay }}" inputMode="numeric" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.75);font-size:13px;color:#0E3E2E;outline:none;box-sizing:border-box;font-family:'IBM Plex Mono',monospace;width:56px;text-align:right;">
+                </div>
+                <div style="display:flex;gap:7px;align-items:center;">
+                  <div onClick="{{ debtsAdd.save }}" style="padding:8px 14px;border-radius:999px;background:rgba(14,62,46,0.88);color:#F2F7F3;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;">Přidat</div>
+                  <div onClick="{{ debtsAdd.cancel }}" style="font-size:12.5px;color:#4C685C;cursor:pointer;padding:8px 4px;white-space:nowrap;">zrušit</div>
+                </div>
+              </div>
+            </sc-if>
+              <sc-if value="{{ dErr }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:#9A5B22;">{{ dErr }}</div></sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isVic }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Víc (mobil)" style="animation:numo-fade 150ms ease-out;">
+          <div style="font-family:'Sora',sans-serif;font-weight:600;font-size:21px;margin:2px 2px 14px;">Víc</div>
+          <div style="background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.85);border-radius:20px;padding:6px 18px;box-sizing:border-box;">
+            <div onClick="{{ goSubs }}" style="display:flex;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid rgba(14,62,46,0.07);font-size:14px;color:#0E3E2E;cursor:pointer;min-height:44px;box-sizing:border-box;">Pravidelné<span style="margin-left:auto;color:#7E958A;">›</span></div>
+            <div onClick="{{ goVyvoj }}" style="display:flex;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid rgba(14,62,46,0.07);font-size:14px;color:#0E3E2E;cursor:pointer;min-height:44px;box-sizing:border-box;">Vývoj<span style="margin-left:auto;color:#7E958A;">›</span></div>
+            <div onClick="{{ goDluhy }}" style="display:flex;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid rgba(14,62,46,0.07);font-size:14px;color:#0E3E2E;cursor:pointer;min-height:44px;box-sizing:border-box;">Dluhy<span style="margin-left:auto;color:#7E958A;">›</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid rgba(14,62,46,0.07);font-size:14px;color:#7E958A;">Import</div>
+            <div style="display:flex;align-items:center;gap:10px;padding:13px 0;font-size:14px;color:#7E958A;">Nastavení</div>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:#5E7568;padding:0 4px;">Import a Nastavení v této verzi prototypu nejsou.</div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div onClick="{{ openSheet }}" style="position:absolute;right:16px;bottom:104px;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,0.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.95);box-shadow:0 10px 26px rgba(14,62,46,0.18);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:45;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E3E2E" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </div>
+
+    <div style="position:absolute;left:0;right:0;bottom:0;z-index:44;display:flex;padding:8px 10px 26px;background:rgba(255,255,255,0.55);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,0.85);">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+        <div onClick="{{ t.click }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;cursor:pointer;min-height:44px;box-sizing:border-box;color:{{ t.color }};">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" dangerouslySetInnerHTML="{{ t.iconHtml }}"></svg>
+          <div style="font-size:10px;font-weight:{{ t.weight }};">{{ t.label }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:70;">
+        <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(14,62,46,0.28);"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;background:rgba(255,255,255,0.85);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-top:1px solid rgba(255,255,255,0.95);border-radius:24px 24px 0 0;padding:20px 20px 40px;box-sizing:border-box;animation:numo-sheet 200ms ease-out;">
+          <div style="width:36px;height:4px;border-radius:99px;background:rgba(14,62,46,0.15);margin:0 auto 16px;"></div>
+          <div style="font-family:'Sora',sans-serif;font-weight:600;font-size:17px;margin-bottom:14px;">Zapsat výdaj</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <input placeholder="částka v Kč" value="{{ sa }}" onChange="{{ setSa }}" inputMode="numeric" style="padding:12px 14px;border-radius:13px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.7);font-family:'IBM Plex Mono',monospace;font-size:17px;color:#0E3E2E;outline:none;box-sizing:border-box;" style-focus="border:1px solid rgba(23,106,78,0.5);box-shadow:0 0 0 3px rgba(26,127,90,0.16)">
+            <input placeholder="obchodník" value="{{ sn }}" onChange="{{ setSn }}" style="padding:12px 14px;border-radius:13px;border:1px solid rgba(255,255,255,0.95);background:rgba(255,255,255,0.7);font-family:'Instrument Sans',sans-serif;font-size:14.5px;color:#0E3E2E;outline:none;box-sizing:border-box;" style-focus="border:1px solid rgba(23,106,78,0.5);box-shadow:0 0 0 3px rgba(26,127,90,0.16)">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <sc-for list="{{ sheetCats }}" as="o" hint-placeholder-count="8">
+                <div onClick="{{ o.click }}" style="position:relative;padding:7px 12px;border-radius:999px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.65);border:1px solid rgba(255,255,255,0.95);white-space:nowrap;">
+                  <sc-if value="{{ o.active }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:-1px;background:rgba(14,62,46,0.85);border-radius:999px;"></div></sc-if>
+                  <span style="position:relative;color:{{ o.textColor }};">{{ o.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="font-size:12.5px;color:#4C685C;">platí</div>
+              <div style="display:flex;gap:3px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.95);border-radius:999px;padding:3px;">
+                <sc-for list="{{ sheetWho }}" as="o" hint-placeholder-count="2">
+                  <div onClick="{{ o.click }}" style="position:relative;padding:6px 14px;border-radius:999px;font-size:13px;cursor:pointer;">
+                    <sc-if value="{{ o.active }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:rgba(255,255,255,1);border-radius:999px;"></div></sc-if>
+                    <span style="position:relative;">{{ o.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div onClick="{{ saveSheet }}" style="margin-left:auto;padding:11px 22px;border-radius:999px;background:rgba(14,62,46,0.9);color:#F2F7F3;font-size:14px;font-weight:600;cursor:pointer;">Uložit</div>
+            </div>
+            <sc-if value="{{ sheetErr }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;color:#9A5B22;">{{ sheetErr }}</div></sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;bottom:118px;left:50%;transform:translateX(-50%);z-index:80;background:rgba(14,62,46,0.92);color:#F2F7F3;padding:10px 18px;border-radius:999px;font-size:12.5px;white-space:nowrap;max-width:330px;overflow:hidden;text-overflow:ellipsis;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:numo-fade 180ms ease-out;box-shadow:0 12px 30px rgba(14,62,46,0.25);">{{ toast }}</div>
+    </sc-if>
+  </div>
+</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:480,&quot;height&quot;:960},&quot;zobrazitProjekci&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Zobrazení&quot;},&quot;autoDetekce&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Zobrazení&quot;}}">
+class Component extends DCLogic {
+  CATS = {'Jídlo':'#175C43','Domácnost':'#2F8060','Doprava':'#6FA98C','Dárky':'#C99A4B','Zábava':'#B26A50','Rande':'#D9A85C','Osobní péče':'#A9C4B1','Zdraví':'#7E958A','Bydlení':'#0E3E2E'};
+  SUBS = [['Apple One',249,3],['Claude',550,7],['Notion',295,8],['Infuse',49,12],['Spotify',249,15],['GeForce Now',598,21]];
+  BILLS = [['Nájem',11600,1,true],['Elektřina',950,5,true],['Plyn',1100,6,true],['Voda',480,8,true],['Internet',550,10,true],['Pojištění domácnosti',470,12,true],['ČSSZ + VZP',9026,20,false],['Mobilní tarify',598,24,false]];
+  ANNUAL = [['Povinné ručení',5600,'listopad'],['Dálniční známka',2300,'leden'],['Popelnice',1760,'březen'],['Lítačka',3650,'srpen']];
+  AVGS = [['Bydlení',14900],['Jídlo',9300],['Domácnost',5200],['Doprava',3600],['Zábava',2500],['Předplatná',1990],['Dárky',1800],['Zdraví',1000],['Osobní péče',900]];
+  TREND = [['Jídlo',[10100,8600,9800,9200,9640,8460]],['Domácnost',[5400,4800,5600,4900,4930,5570]],['Doprava',[3700,3400,3600,3500,3470,3930]],['Zábava',[2700,2900,2600,2500,2620,1680]]];
+  CASH_PAST = [['červenec',900],['srpen',1800],['září',2500]];
+  CHK = '<rect x="3" y="3" width="18" height="18" rx="5" fill="#176A4E" stroke="none"></rect><polyline points="7.6 12.4 10.6 15.4 16.4 9.2" stroke="#FFFFFF"></polyline>';
+  CIRC = '<circle cx="12" cy="12" r="9"></circle>';
+  CASH_NOW = 3600;
+  RECEIVED = 41000;
+  ICONS = {
+    prehled:'<rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect>',
+    transakce:'<line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>',
+    plan:'<rect x="3" y="4" width="18" height="17" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>',
+    vic:'<circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>'
+  };
+  TX = [
+    {id:1,d:1,n:'Nájem',c:'Bydlení',a:11600,w:'L'},{id:2,d:2,n:'Albert',c:'Jídlo',a:640,w:'V'},
+    {id:3,d:3,n:'Lidl',c:'Jídlo',a:890,w:'L'},{id:4,d:3,n:'Kino Aero',c:'Zábava',a:380,w:'V'},
+    {id:5,d:4,n:'Benzina',c:'Doprava',a:1450,w:'L'},{id:6,d:5,n:'Elektřina',c:'Bydlení',a:950,w:'L'},
+    {id:7,d:5,n:'Penny',c:'Jídlo',a:412,w:'L'},{id:8,d:6,n:'Plyn',c:'Bydlení',a:1100,w:'L'},
+    {id:9,d:6,n:'dm drogerie',c:'Domácnost',a:310,w:'V'},{id:10,d:7,n:'Dr. Max',c:'Zdraví',a:240,w:'V'},
+    {id:11,d:7,n:'PID',c:'Doprava',a:380,w:'L'},{id:12,d:8,n:'Voda',c:'Bydlení',a:480,w:'L'},
+    {id:13,d:8,n:'Albert',c:'Jídlo',a:736,w:'V'},{id:14,d:8,n:'Pizzerie Kmotra',c:'Rande',a:640,w:'L'},
+    {id:15,d:9,n:'Alza',c:'Domácnost',a:2490,w:'L'},{id:16,d:9,n:'Knihkupectví — dárek',c:'Dárky',a:460,w:'V'},
+    {id:17,d:10,n:'Internet',c:'Bydlení',a:550,w:'L'},{id:18,d:10,n:'Lidl',c:'Jídlo',a:1018,w:'V'},
+    {id:19,d:10,n:'Kavárna Mezi řádky',c:'Zábava',a:180,w:'L'},{id:20,d:11,n:'U Kalendů',c:'Jídlo',a:860,w:'L'},
+    {id:21,d:12,n:'Pojištění domácnosti',c:'Bydlení',a:470,w:'L'},{id:22,d:12,n:'Penny',c:'Jídlo',a:534,w:'V'},
+    {id:23,d:12,n:'Holičství Karlín',c:'Osobní péče',a:480,w:'L'},{id:24,d:13,n:'Benzina',c:'Doprava',a:1380,w:'L'},
+    {id:25,d:13,n:'Hospoda U Slunce',c:'Zábava',a:350,w:'L'},{id:26,d:14,n:'IKEA',c:'Domácnost',a:1930,w:'V'},
+    {id:27,d:14,n:'Steam',c:'Zábava',a:420,w:'L'},{id:28,d:15,n:'Albert',c:'Jídlo',a:918,w:'V'},
+    {id:29,d:15,n:'Lékárna Benu',c:'Zdraví',a:260,w:'V'},{id:30,d:16,n:'Parkování Letná',c:'Doprava',a:572,w:'L'},
+    {id:31,d:16,n:'Dárek — svatba Kláry',c:'Dárky',a:1800,w:'V'},{id:32,d:17,n:'Lidl',c:'Jídlo',a:764,w:'L'},
+    {id:33,d:18,n:'Kaufland',c:'Domácnost',a:840,w:'V'},{id:34,d:18,n:'Kino — rande',c:'Rande',a:280,w:'V'},
+    {id:35,d:19,n:'Damascus Kebab',c:'Jídlo',a:250,w:'L'},{id:36,d:19,n:'dm drogerie',c:'Osobní péče',a:260,w:'V'},
+    {id:37,d:20,n:'Penny',c:'Jídlo',a:690,w:'L'},{id:38,d:21,n:'Penny',c:'Jídlo',a:748,w:'L'},
+    {id:39,d:21,n:'Flek na kafe',c:'Zábava',a:350,w:'V'},{id:40,d:21,n:'PID',c:'Doprava',a:148,w:'L'}
+  ];
+  state = {
+    tab:'prehled', cancelSim:[], tapDay:null, selCF:null, selRes:null, tip:null, whatIf:null, detectDone:false, subsOpen:false,
+    debts:[{id:1,n:'ČSSZ — nedoplatek',total:42000,rest:28000,pay:3000,day:20,acc:'2200310123/0710',vs:'6512340987'},{id:2,n:'VZP — nedoplatek',total:20000,rest:14000,pay:2000,day:20,acc:'1111111111/0710',vs:'1122334455'}],
+    dName:'', dRest:'', dPay:'', dDay:'', dErr:null,
+    savMode:'castka', savAmt:'3000', savPct:'10', pctFocus:false,
+    q:'', who:'Vše', cat:'Vše', editChip:null, toast:null,
+    plan:[{n:'Zubař — doplatek',a:2276,inc:false,freq:'jednorázově'}],
+    planning:[{n:'Faktura — klient Nordic',a:24000,inc:true,freq:'jednorázově',month:'říjen 2026'},{n:'Zimní pneu + servis',a:4300,inc:false,freq:'jednorázově',month:'listopad 2026'},{n:'Dovolená Chorvatsko',a:18000,inc:false,freq:'jednorázově',month:'červenec 2027'},{n:'Kurz keramiky',a:1200,inc:false,freq:'každý měsíc',month:''}],
+    subs:null, bills:null, annual:null,
+    eKey:null, eIdx:null, eVals:{}, aKey:null, aVals:{}, payIdx:null, payVals:{},
+    limits:{'Jídlo':{on:true,cap:11000},'Zábava':{on:true,cap:2000},'Doprava':{on:true,cap:3500},'Domácnost':{on:false},'Dárky':{on:false},'Rande':{on:false},'Osobní péče':{on:false},'Zdraví':{on:false}},
+    limitEdit:null, limitVal:'',
+    addName:'', addAmt:'', addInc:false, addFreq:'jednorázově', addErr:null,
+    sheetOpen:false, sn:'', sa:'', sc:'Jídlo', sw:'L', sheetErr:null,
+    txs:null, nextId:500
+  };
+  componentDidMount(){ this.setState({txs:this.TX.slice()}); }
+  F(n){ return Math.abs(n).toLocaleString('cs-CZ').replace(/\u00A0/g,'\u202F'); }
+  showToast(msg){ clearTimeout(this._tt); this.setState({toast:msg}); this._tt=setTimeout(()=>this.setState({toast:null}),2800); }
+  dayLabel(d){
+    const WD=['neděle','pondělí','úterý','středa','čtvrtek','pátek','sobota'];
+    if(d===21) return 'dnes'; if(d===20) return 'včera';
+    return WD[new Date(2026,9,d).getDay()]+' '+d+'. října';
+  }
+  arr(key){ const S=this.state; if(S[key]) return S[key];
+    if(key==='subs') return this.SUBS.map((s,i)=>({id:i+1,n:s[0],a:s[1],day:s[2]}));
+    if(key==='bills') return this.BILLS.map((b,i)=>({id:i+1,n:b[0],a:b[1],day:b[2],paid:b[3]}));
+    return this.ANNUAL.map((a,i)=>({id:i+1,n:a[0],a:a[1],month:a[2]}));
+  }
+  num(v){ return parseInt(String(v==null?'':v).replace(/[\s\u202F]/g,''),10)||0; }
+  rowOps(key,i,it,parse,noun){
+    const S=this.state, arr=this.arr(key);
+    return {
+      editing:S.eKey===key&&S.eIdx===i, idle:!(S.eKey===key&&S.eIdx===i),
+      startEdit:()=>this.setState({eKey:key,eIdx:i,eVals:{n:it.n,a:String(it.a||''),day:String(it.day||''),month:it.month||'',rest:String(it.rest||''),pay:String(it.pay||'')},aKey:null,payIdx:null}),
+      cancelEdit:()=>this.setState({eKey:null,eIdx:null}),
+      saveEdit:()=>{ const v=parse(S.eVals||{}); const a=arr.slice(); a[i]={...a[i],...v};
+        this.setState({[key]:a,eKey:null,eIdx:null}); this.showToast((v.n||it.n)+' — uloženo'); },
+      del:()=>{ const a=arr.slice(); a.splice(i,1); this.setState({[key]:a,eKey:null,eIdx:null}); this.showToast(noun+' odebráno: '+it.n); }
+    };
+  }
+  addOps(key,parse,noun){
+    const S=this.state, arr=this.arr(key);
+    return { open:S.aKey===key, closed:S.aKey!==key,
+      start:()=>this.setState({aKey:key,aVals:{},eKey:null,payIdx:null}),
+      cancel:()=>this.setState({aKey:null,aVals:{}}),
+      save:()=>{ const v=parse(S.aVals||{}); if(!v){ this.showToast('doplň název a částku'); return; }
+        this.setState({[key]:[...arr,{id:Date.now(),...v}],aKey:null,aVals:{}}); this.showToast(noun+' přidáno: '+v.n); } };
+  }
+  savings(){
+    const S=this.state;
+    if(S.savMode==='castka') return Math.max(0,parseInt(String(S.savAmt).replace(/\s/g,''),10)||0);
+    return Math.max(0,Math.round(63000*(parseFloat(String(S.savPct).replace(',','.'))||0)/100));
+  }
+  heatColor(sum){ if(sum<400)return'#CFE3D5'; if(sum<800)return'#A8CBB4'; if(sum<1300)return'#74AC8C'; if(sum<2000)return'#45906A'; return'#1C6B4A'; }
+  buildCF(data,w,h,o){
+    const F=this.F.bind(this);
+    const maxPool=Math.max(...data.map(d=>d.bal)), minPool=Math.min(...data.map(d=>d.bal));
+    const NICE=[500,1000,1500,2000,2500,3000,4000,5000,7500,10000,12500,15000,20000,25000,30000,40000,50000,75000,100000,150000];
+    const step=NICE.find(s=>s*4>=maxPool)||NICE[NICE.length-1];
+    const top=step*4;
+    const domMax=top+step*0.1, domMin=Math.min(-step*0.42,minPool-step*0.12);
+    const y=v=>o.padT+(domMax-v)*(h-o.padT-o.padB)/(domMax-domMin);
+    const x=i=>o.padL+i*(w-o.padL-o.padR)/(data.length-1);
+    let path='M'+x(0).toFixed(1)+' '+y(data[0].bal).toFixed(1);
+    for(let i=1;i<data.length;i++){
+      const x0=x(i-1),x1=x(i),y0=y(data[i-1].bal),y1=y(data[i].bal),mx=(x0+x1)/2;
+      path+=' C'+mx.toFixed(1)+' '+y0.toFixed(1)+' '+mx.toFixed(1)+' '+y1.toFixed(1)+' '+x1.toFixed(1)+' '+y1.toFixed(1);
+    }
+    const grid=[];
+    const kLabel=v=>v===0?'0':(v/1000).toLocaleString('cs-CZ')+' k';
+    for(let v=top;v>=0;v-=step) grid.push({y:y(v),topPct:(y(v)/h*100).toFixed(2)+'%',ty:y(v)+3,label:kLabel(v),dash:v===0?'none':'3 4',stroke:v===0?'rgba(14,62,46,0.32)':'rgba(14,62,46,0.09)'});
+    const sel=this.state.selCF;
+    const pts=data.map((c,i)=>{
+      const isSel=sel===i, fill=c.past?'#176A4E':'#C99A4B';
+      return { x:x(i), y:y(c.bal), leftPct:(x(i)/w*100).toFixed(2)+'%', valTop:((y(c.bal)+15)/h*100).toFixed(2)+'%', shift:i===0?'-12%':i===data.length-1?'-88%':'-50%',
+        m:c.k, mFull:c.name, lblOp:isSel?0:1, fill, ringR:8, ringOp:isSel?1:0,
+        vF:(c.bal<0?'−':'+')+F(c.bal), lblFill:c.bal<0?'#A6432E':'#176A4E',
+        click:()=>this.setState({selCF:isSel?null:i}) };
+    });
+    let panel={show:false,left:'0%',top:'0%',tx:'-50%',title:'',rows:[]};
+    if(sel!==null&&data[sel]){
+      const d=data[sel], resC=d.bal<0?'#A6432E':'#176A4E';
+      panel={ show:true, left:(x(sel)/w*100).toFixed(2)+'%', top:(y(d.bal)/h*100).toFixed(2)+'%',
+        tx: sel===0?'-4%':sel===data.length-1?'-96%':'-50%', title:d.name,
+        rows: d.past
+          ? [{l:'příjmy',v:'+'+F(d.inc),c:'#0E3E2E'},{l:'výdaje',v:'−'+F(d.out),c:'#0E3E2E'},{l:'výsledek měsíce',v:(d.bal<0?'−':'+')+F(d.bal)+' Kč',c:resC}]
+          : [{l:'plánované příjmy',v:'+'+F(d.inc),c:'#0E3E2E'},{l:'plánované výdaje',v:'−'+F(d.out),c:'#0E3E2E'},{l:'předpokládaný výsledek',v:(d.bal<0?'−':'+')+F(d.bal)+' Kč',c:resC}] };
+    }
+    return { path, grid, pts, zeroY:y(0), negH:minPool<0?Math.max(0,(h-o.padB)-y(0)):0, panel,
+      axisW:((o.padL-12)/w*100).toFixed(2)+'%', monthTop:((h-o.padB+14)/h*100).toFixed(2)+'%' };
+  }
+  buildRes(data,w,h,o){
+    const F=this.F.bind(this);
+    const vals=data.map(d=>d.v);
+    const mx=Math.max(...vals,0), mn=Math.min(...vals,0);
+    const NICE=[1000,2000,2500,5000,10000,20000,25000,50000];
+    const step=NICE.find(s=>s*4>=(mx-mn))||NICE[NICE.length-1];
+    const top=Math.ceil(mx/step)*step, bot=Math.floor(mn/step)*step;
+    const domMax=top+step*0.2, domMin=bot-step*0.2;
+    const y=v=>o.padT+(domMax-v)*(h-o.padT-o.padB)/(domMax-domMin);
+    const x=i=>o.padL+i*(w-o.padL-o.padR)/(data.length-1);
+    let path='M'+x(0).toFixed(1)+' '+y(vals[0]).toFixed(1);
+    for(let i=1;i<data.length;i++){
+      const x0=x(i-1),x1=x(i),y0=y(vals[i-1]),y1=y(vals[i]),mid=(x0+x1)/2;
+      path+=' C'+mid.toFixed(1)+' '+y0.toFixed(1)+' '+mid.toFixed(1)+' '+y1.toFixed(1)+' '+x1.toFixed(1)+' '+y1.toFixed(1);
+    }
+    const grid=[];
+    for(let v=top;v>=bot;v-=step) grid.push({y:y(v),topPct:(y(v)/h*100).toFixed(2)+'%',label:v===0?'0':(v<0?'−':'')+Math.abs(v/1000).toLocaleString('cs-CZ')+'k',dash:v===0?'none':'3 4',stroke:v===0?'rgba(14,62,46,0.32)':'rgba(14,62,46,0.09)'});
+    const sel=this.state.selRes;
+    const pts=data.map((d,i)=>{
+      const isSel=sel===i;
+      return { x:x(i), y:y(d.v), leftPct:(x(i)/w*100).toFixed(2)+'%', valTop:((y(d.v)+13)/h*100).toFixed(2)+'%',
+        shift:i===0?'-12%':i===data.length-1?'-88%':'-50%', mFull:d.short,
+        fill:d.warn?'#A6432E':(d.past?'#176A4E':'#C99A4B'), ringR:9, ringOp:isSel?1:0, lblOp:isSel?0:1,
+        vF:(d.v<0?'−':'+')+F(d.v), lblFill:d.v<0?'#A6432E':'#176A4E',
+        click:()=>this.setState({selRes:isSel?null:i}) };
+    });
+    let panel={show:false,left:'0%',top:'0%',tx:'-50%',title:'',rows:[]};
+    if(sel!==null&&data[sel]){
+      const d=data[sel];
+      panel={ show:true, left:(x(sel)/w*100).toFixed(2)+'%', top:(y(d.v)/h*100).toFixed(2)+'%',
+        tx: sel===0?'-8%':sel===data.length-1?'-92%':'-50%', title:d.name, rows:d.rows };
+    }
+    return { path, grid, pts, zeroY:y(0), negH:Math.max(0,(h-o.padB)-y(0)), panel,
+      axisW:((o.padL-10)/w*100).toFixed(2)+'%', monthTop:((h-o.padB+12)/h*100).toFixed(2)+'%' };
+  }
+  renderVals(){
+    const S=this.state, F=this.F.bind(this);
+    const showProj=this.props.zobrazitProjekci??true, autoDet=this.props.autoDetekce??true;
+    const txs=S.txs||this.TX;
+    const txSum=txs.reduce((a,t)=>a+t.a,0);
+    const vydaje=txSum+1990;
+    const subsArr=this.arr('subs'), billsArr=this.arr('bills'), annualArr=this.arr('annual');
+    const THIS_M='říjen 2026';
+    const inThisM=p=>p.freq==='každý měsíc'||p.month===THIS_M;
+    const duties=billsArr.filter(b=>!b.paid).reduce((a,b)=>a+b.a,0)
+      +subsArr.filter(s=>s.day>21).reduce((a,s)=>a+s.a,0)
+      +S.plan.filter(p=>!p.inc).reduce((a,p)=>a+p.a,0);
+    const planningOutM=S.planning.filter(p=>!p.inc&&inThisM(p)).reduce((a,p)=>a+p.a,0);
+    const plannedNet=duties+planningOutM;
+    const zbyva=63000-vydaje-plannedNet;
+    const sav=this.savings();
+    const naUtratu=zbyva-sav;
+    const tempo=naUtratu>0?Math.round(naUtratu/9):0;
+    const varSpend=txs.filter(t=>t.c!=='Bydlení').reduce((a,t)=>a+t.a,0);
+    const avgDaily=Math.round(varSpend/21);
+    const projSpend=Math.round(avgDaily*9/10)*10;
+    const projEnd=zbyva-projSpend;
+    const byDay={}; txs.forEach(t=>{ (byDay[t.d]=byDay[t.d]||[]).push(t); });
+    const cells=[]; const firstDow=(new Date(2026,9,1).getDay()+6)%7;
+    for(let i=0;i<firstDow;i++) cells.push({key:'e'+i,bg:'transparent',bd:'none',showTip:false,tap:null});
+    for(let d=1;d<=30;d++){
+      const rows=byDay[d]||[], sum=rows.reduce((a,t)=>a+t.a,0), future=d>21;
+      let bg, bd='1px solid rgba(14,62,46,0.04)';
+      if(future){ bg='transparent'; bd='1px dashed rgba(14,62,46,0.18)'; }
+      else if(sum===0) bg='rgba(14,62,46,0.05)';
+      else bg=this.heatColor(sum);
+      const col=(firstDow+d-1)%7;
+      cells.push({ key:'d'+d, bg, bd, showTip:S.tapDay===d&&!future&&sum>0,
+        tipLabel:d+'. 10.', tipTotal:F(sum)+' Kč',
+        tipShift:col<2?'-20%':col>4?'-80%':'-50%',
+        tipRows:rows.map(t=>({n:t.n,aF:F(t.a)})),
+        tap:future||sum===0?()=>this.setState({tapDay:null}):()=>this.setState({tapDay:S.tapDay===d?null:d}) });
+    }
+    while(cells.length%7) cells.push({key:'t'+cells.length,bg:'transparent',bd:'none',showTip:false,tap:null});
+    const heatWeeks=[]; for(let i=0;i<cells.length;i+=7) heatWeeks.push(cells.slice(i,i+7));
+    const agg={}; txs.forEach(t=>{ if(t.c!=='Bydlení') agg[t.c]=(agg[t.c]||0)+t.a; });
+    const catList=Object.entries(agg).sort((a,b)=>b[1]-a[1]);
+    const maxCat=catList.length?catList[0][1]:1;
+    const catBars=catList.map(d=>({name:d[0],amtF:F(d[1]),color:this.CATS[d[0]],w:(d[1]/maxCat*100).toFixed(1)+'%'}));
+    const planningRows=S.planning.map((p,i)=>({ n:p.n, freq:p.freq, amtF:(p.inc?'+':'−')+F(p.a), color:p.inc?'#176A4E':'#0E3E2E',
+      monthLbl:p.freq==='každý měsíc'?'':p.month||'', hasMonth:p.freq!=='každý měsíc'&&!!p.month,
+      ...this.rowOps('planning',i,p,v=>({n:(v.n||'').trim()||p.n,a:this.num(v.a)||p.a,month:v.month===''?p.month:v.month}),'Položka'),
+      remove:()=>{ const pl=S.planning.slice(); pl.splice(i,1); this.setState({planning:pl}); this.showToast('Položka odebrána: '+p.n); } }));
+    const billsAll=billsArr.map(b=>({ n:b.n, dayF:b.day+'.', amtF:F(b.a),
+      iconC:b.paid?'#176A4E':'#9DB3A5', iconHtml:{__html:b.paid?this.CHK:this.CIRC} }));
+    const billsPaidCount=billsArr.filter(b=>b.paid).length;
+    const oneOffRows=S.plan.filter(p=>p.freq==='jednorázově'&&!p.inc).map(p=>({n:p.n,amtF:F(p.a)}));
+    const annualThis=annualArr.filter(a=>a.month==='říjen').map(a=>({n:a.n,amtF:F(a.a)}));
+    const subsTotal=subsArr.reduce((a,s)=>a+s.a,0);
+    const subs=subsArr.map(s=>{ const paid=s.day<=21;
+      return {name:s.n,dayF:s.day+'.',amtF:F(s.a),iconC:paid?'#176A4E':'#9DB3A5',iconHtml:{__html:paid?this.CHK:this.CIRC}}; });
+    const sim=S.cancelSim||[];
+    const subsManage=subsArr.map((s,i)=>{
+      const off=sim.includes(s.n);
+      const paid=s.day<=21;
+      return { name:s.n, dayF:s.day+'.', amtF:F(s.a), off,
+        stateIconC:paid?'#176A4E':'#9DB3A5', stateIconHtml:{__html:paid?this.CHK:this.CIRC},
+        ...this.rowOps('subs',i,s,v=>({n:(v.n||'').trim()||s.n,a:this.num(v.a)||s.a,day:this.num(v.day)||s.day}),'Předplatné'),
+        nameColor:off?'#9DB3A5':'#0E3E2E', amtColor:off?'#9DB3A5':'#4C685C', decor:off?'line-through':'none',
+        iconC:off?'#A6432E':'#9DB3A5', tip:off?'vrátit zpět':'co když zruším',
+        toggle:()=>this.setState({cancelSim:off?sim.filter(n=>n!==s.n):[...sim,s.n]}) };
+    });
+    const simMonth=subsArr.filter(s=>sim.includes(s.n)).reduce((a,s)=>a+s.a,0);
+    const checklist=billsArr.map((b,i)=>({ n:b.n, amtF:F(b.a),
+      iconC:b.paid?'#176A4E':'#9DB3A5', iconHtml:{__html:b.paid?this.CHK:this.CIRC},
+      stateText:b.day+'.', stateColor:'#7E958A',
+      ...this.rowOps('bills',i,b,v=>({n:(v.n||'').trim()||b.n,a:this.num(v.a)||b.a,day:this.num(v.day)||b.day}),'Platba') }));
+    const annualManage=annualArr.map((a,i)=>({n:a.n,month:a.month,amtF:F(a.a),
+      ...this.rowOps('annual',i,a,v=>({n:(v.n||'').trim()||a.n,a:this.num(v.a)||a.a,month:(v.month||'').trim()||a.month}),'Roční platba') }));
+    const subsAdd=this.addOps('subs',v=>{ const n=(v.n||'').trim(), a=this.num(v.a); if(!n||!a) return null;
+      return {n,a,day:Math.min(28,Math.max(1,this.num(v.day)||1))}; },'Předplatné');
+    const billsAdd=this.addOps('bills',v=>{ const n=(v.n||'').trim(), a=this.num(v.a); if(!n||!a) return null;
+      return {n,a,day:Math.min(28,Math.max(1,this.num(v.day)||1)),paid:false}; },'Platba');
+    const annualAdd=this.addOps('annual',v=>{ const n=(v.n||'').trim(), a=this.num(v.a); if(!n||!a) return null;
+      return {n,a,month:(v.month||'').trim()||'leden'}; },'Roční platba');
+    const debtsAdd=this.addOps('debts',v=>{ const n=(v.n||'').trim(), r=this.num(v.rest), p=this.num(v.pay); if(!n||!r||!p) return null;
+      return {n,total:r,rest:r,pay:p,day:Math.min(28,Math.max(1,this.num(v.day)||20)),acc:'—',vs:'—'}; },'Dluh');
+    const EV=S.eVals||{}, AV=S.aVals||{}, PV=S.payVals||{};
+    const crudVals={
+      evN:EV.n||'', evA:EV.a||'', evDay:EV.day||'', evMonth:EV.month||'', evRest:EV.rest||'', evPay:EV.pay||'',
+      setEvN:e=>this.setState({eVals:{...EV,n:e.target.value}}),
+      setEvA:e=>this.setState({eVals:{...EV,a:e.target.value}}),
+      setEvDay:e=>this.setState({eVals:{...EV,day:e.target.value}}),
+      setEvMonth:e=>this.setState({eVals:{...EV,month:e.target.value}}),
+      setEvRest:e=>this.setState({eVals:{...EV,rest:e.target.value}}),
+      setEvPay:e=>this.setState({eVals:{...EV,pay:e.target.value}}),
+      avN:AV.n||'', avA:AV.a||'', avDay:AV.day||'', avMonth:AV.month||'', avRest:AV.rest||'', avPay:AV.pay||'',
+      setAvN:e=>this.setState({aVals:{...AV,n:e.target.value}}),
+      setAvA:e=>this.setState({aVals:{...AV,a:e.target.value}}),
+      setAvDay:e=>this.setState({aVals:{...AV,day:e.target.value}}),
+      setAvMonth:e=>this.setState({aVals:{...AV,month:e.target.value}}),
+      setAvRest:e=>this.setState({aVals:{...AV,rest:e.target.value}}),
+      setAvPay:e=>this.setState({aVals:{...AV,pay:e.target.value}}),
+      pvA:PV.a||'', pvD:PV.d||'',
+      setPvA:e=>this.setState({payVals:{...PV,a:e.target.value}}),
+      setPvD:e=>this.setState({payVals:{...PV,d:e.target.value}}),
+      subsAdd, billsAdd, annualAdd, debtsAdd
+    };
+    const feed=txs.slice().sort((a,b)=>b.d-a.d||b.id-a.id).slice(0,4).map(t=>({
+      n:t.n, aF:F(t.a), w:t.w, day:this.dayLabel(t.d),
+      avBg:t.w==='L'?'rgba(23,106,78,0.14)':'rgba(201,154,75,0.2)', avColor:t.w==='L'?'#176A4E':'#8A5F1E' }));
+    const q=S.q.trim().toLowerCase();
+    const filtered=txs.filter(t=>(S.who==='Vše'||t.w===S.who)&&(S.cat==='Vše'||t.c===S.cat)&&(!q||t.n.toLowerCase().includes(q)));
+    const days=[...new Set(filtered.map(t=>t.d))].sort((a,b)=>b-a);
+    const catNames=Object.keys(this.CATS);
+    const txGroups=days.map(d=>{
+      const rows=filtered.filter(t=>t.d===d);
+      return { label:this.dayLabel(d), totalF:F(rows.reduce((a,t)=>a+t.a,0)),
+        rows:rows.map(t=>({ n:t.n, aF:F(t.a), c:t.c, w:t.w,
+          avBg:t.w==='L'?'rgba(23,106,78,0.14)':'rgba(201,154,75,0.2)', avColor:t.w==='L'?'#176A4E':'#8A5F1E',
+          catColor:this.CATS[t.c], editorOpen:S.editChip===t.id,
+          editToggle:()=>this.setState({editChip:S.editChip===t.id?null:t.id}),
+          opts:catNames.map(cn=>({ label:cn, color:this.CATS[cn],
+            pick:()=>{ this.setState({txs:txs.map(x=>x.id===t.id?{...x,c:cn}:x),editChip:null});
+              this.showToast('Zapamatuji si pravidlo: '+t.n+' → '+cn); } })) })) };
+    });
+    const limitRows=catList.map(d=>{
+      const name=d[0], L=S.limits[name]||{on:false}, spent=d[1], editing=S.limitEdit===name;
+      const row={ name, isEdit:editing, isOn:!editing&&L.on, isOff:!editing&&!L.on, extra:'', spentF:F(spent), color:this.CATS[name] };
+      if(L.on){
+        const left=L.cap-spent;
+        if(left<0){ row.primary='nad plánem o '+F(-left)+' Kč'; row.primColor='#A6432E'; row.stateText='nad plánem'; row.stateColor='#A6432E';
+          row.greenW=(L.cap/spent*100).toFixed(1)+'%'; row.overW=(100-L.cap/spent*100).toFixed(1)+'%'; row.extra='\u00A0· kryto z rezervy'; }
+        else { const low=left/L.cap<0.2;
+          row.primary='zbývá '+F(left)+' Kč'; row.primColor='#0E3E2E';
+          row.stateText=low?'dochází':'v klidu'; row.stateColor=low?'#9A5B22':'#176A4E';
+          row.greenW=(spent/L.cap*100).toFixed(1)+'%'; row.overW='0%'; }
+        row.spentF=F(spent); row.capF=F(L.cap);
+      }
+      row.enable=()=>this.setState({limitEdit:name,limitVal:''});
+      row.cancel=()=>this.setState({limitEdit:null});
+      row.save=()=>{ const v=parseInt(S.limitVal.replace(/\s/g,''),10);
+        if(!v||v<=0){ this.showToast('Zadej limit v Kč'); return; }
+        this.setState({limits:{...S.limits,[name]:{on:true,cap:v}},limitEdit:null});
+        this.showToast('Limit pro '+name+' nastaven na '+F(v)+' Kč'); };
+      return row;
+    });
+    const rijOut=Math.max(63000-sav, vydaje+plannedNet);
+    const base=[
+      {k:'zář',name:'září',past:true,inc:58200,out:51300},
+      {k:'říj',name:'říjen',inc:63000,out:rijOut},
+      {k:'lis',name:'listopad',inc:63000,out:58100},
+      {k:'pro',name:'prosinec',inc:63000,out:55500},
+      {k:'led',name:'leden',inc:63000,out:54800},
+      {k:'úno',name:'únor',inc:63000,out:52500}
+    ];
+    let pool=31600;
+    const cfData=base.map(m=>{ const bal=m.inc-m.out; pool+=bal; return {...m,bal,pool}; });
+    const pctKc=Math.round(63000*(parseFloat(String(S.savPct).replace(',','.'))||0)/100);
+    // dluhy a rezerva
+    const debts=S.debts||[];
+    const debtTotal=debts.reduce((a,d)=>a+d.rest,0);
+    const debtPay=debts.reduce((a,d)=>a+d.pay,0);
+    const reserve=this.CASH_NOW-debtTotal;
+    const monthsClean=debts.length?Math.max(0,...debts.map(d=>d.pay>0?Math.ceil(d.rest/d.pay):0)):0;
+    const MN=['leden','únor','březen','duben','květen','červen','červenec','srpen','září','říjen','listopad','prosinec'];
+    const cleanIdx=9+Math.max(0,monthsClean-1);
+    const cleanLabel=monthsClean>0?MN[cleanIdx%12]+' '+(2026+Math.floor(cleanIdx/12)):'—';
+    const goal=63000+debtPay, received=this.RECEIVED;
+    const onWay=S.planning.filter(p=>p.inc&&inThisM(p)).reduce((a,p)=>a+p.a,0);
+    const missing=goal-received-onWay;
+    const billsTotal=billsArr.reduce((a,b)=>a+b.a,0);
+    // hotovost v čase — minulost ukotvená na dnešní hotovosti, budoucnost = předchozí bod + výsledek měsíce − mimořádné výdaje
+    const SH={'červenec':'čvc','srpen':'srp','září':'zář','říjen':'říj','listopad':'lis','prosinec':'pro','leden':'led','únor':'úno'};
+    const LOC={'listopad':'v listopadu','prosinec':'v prosinci','leden':'v lednu','únor':'v únoru'};
+    const cashData=this.CASH_PAST.map(p=>({name:p[0],short:SH[p[0]],v:p[1],past:true,
+      rows:[{l:'hotovost na konci',v:(p[1]<0?'−':'+')+F(p[1])+' Kč',c:p[1]<0?'#A6432E':'#176A4E'}]}));
+    cashData.push({name:'říjen',short:'říj',v:this.CASH_NOW,past:true,
+      rows:[{l:'na účtech dnes',v:'+'+F(this.CASH_NOW)+' Kč',c:'#176A4E'}]});
+    let cashRun=this.CASH_NOW, cashWarn=null;
+    [2,3,4,5].forEach(i=>{ const m=cfData[i], yr=(m.name==='leden'||m.name==='únor')?2027:2026;
+      const extras=[...annualArr.filter(a=>a.month===m.name).map(a=>[a.n,a.a]),
+        ...S.planning.filter(p=>!p.inc&&p.freq==='jednorázově'&&p.month===m.name+' '+yr).map(p=>[p.n,p.a])];
+      const ex=extras.reduce((a,x)=>a+x[1],0);
+      cashRun+=m.bal-ex;
+      const warn=cashRun<0;
+      if(warn&&!cashWarn) cashWarn=(LOC[m.name]||('v '+m.name))+' hrozí, že hotovost nevyjde';
+      const rows=[{l:'výsledek měsíce',v:(m.bal<0?'−':'+')+F(m.bal),c:'#0E3E2E'}];
+      extras.forEach(x=>rows.push({l:x[0],v:'−'+F(x[1]),c:'#0E3E2E'}));
+      rows.push({l:'hotovost na konci',v:(cashRun<0?'−':'+')+F(cashRun)+' Kč',c:cashRun<0?'#A6432E':'#176A4E'});
+      cashData.push({name:m.name,short:SH[m.name],v:cashRun,past:false,warn,rows}); });
+    // trendy kategorií
+    const trendRows=this.TREND.map(t=>{
+      const vals=t[1], w=140, h=30, mx=Math.max(...vals), mn=Math.min(...vals), span=Math.max(1,mx-mn);
+      const px=i=>(i*(w-6)/(vals.length-1)+3).toFixed(1);
+      const py=v=>(h-4-(v-mn)/span*(h-8)).toFixed(1);
+      let path='M'+px(0)+' '+py(vals[0]);
+      for(let i=1;i<vals.length;i++){ const x0=+px(i-1),x1=+px(i),y0=+py(vals[i-1]),y1=+py(vals[i]),mid=(x0+x1)/2;
+        path+=' C'+mid.toFixed(1)+' '+y0+' '+mid.toFixed(1)+' '+y1+' '+x1+' '+y1; }
+      const last=vals[vals.length-1], avg=Math.round(vals.reduce((a,v)=>a+v,0)/vals.length);
+      const dPct=Math.round((last-avg)/avg*100);
+      return { name:t[0], color:this.CATS[t[0]], path, dotX:px(vals.length-1), dotY:py(last),
+        lastF:F(last), deltaF:(dPct>0?'+':dPct<0?'−':'')+Math.abs(dPct)+' %', deltaColor:dPct>0?'#9A5B22':'#176A4E' };
+    });
+    const TABS=[['prehled','Přehled'],['transakce','Transakce'],['plan','Plán'],['vic','Víc']];
+    return {
+      isPrehled:S.tab==='prehled', isTransakce:S.tab==='transakce', isPlan:S.tab==='plan', isVic:S.tab==='vic', isSubs:S.tab==='subs',
+      isVyvoj:S.tab==='vyvoj', isDluhy:S.tab==='dluhy',
+      goPlan:()=>this.setState({tab:'plan'}), goTransakce:()=>this.setState({tab:'transakce'}),
+      goSubs:()=>this.setState({tab:'subs'}), goVic:()=>this.setState({tab:'vic'}),
+      goVyvoj:()=>this.setState({tab:'vyvoj',selCF:null,selRes:null}), goDluhy:()=>this.setState({tab:'dluhy'}),
+      freshLabel:'výpis k 21. 10.',
+      reserveF:(reserve<0?'−':'+')+F(reserve), reserveColor:reserve<0?'#A6432E':'#176A4E',
+      cashF:F(this.CASH_NOW), debtTotalF:F(debtTotal), debtPayF:F(debtPay), cleanLabel,
+      resTipText:'Hotovost '+F(this.CASH_NOW)+' Kč − dluhy '+F(debtTotal)+' Kč = '+(reserve<0?'−':'')+F(reserve)+' Kč.',
+      resTipOpen:S.tip==='res', resTipTap:()=>this.setState({tip:S.tip==='res'?null:'res'}),
+      goalF:F(goal), receivedF:F(received), missingF:F(missing), onWayF:F(onWay),
+      missingLabel:missing>0?'schází':'pokryto',
+      missingValF:missing>0?F(missing)+' Kč':'+'+F(-missing)+' Kč navíc',
+      missingColor:missing>0?'#0E3E2E':'#176A4E',
+      goalW:Math.min(100,received/goal*100).toFixed(1)+'%',
+      goalWayW:Math.min(100-received/goal*100,onWay/goal*100).toFixed(1)+'%',
+      goalRestW:Math.max(0,100-received/goal*100-onWay/goal*100).toFixed(1)+'%',
+      goalTipText:'Rozpočet domácnosti '+F(63000)+' Kč (výdaje + spoření) + splátky dluhů '+F(debtPay)+' Kč = '+F(goal)+' Kč.',
+      cashWarn, cashWarnShow:!!cashWarn, ...crudVals,
+      goalTipOpen:S.tip==='goal', goalTipTap:()=>this.setState({tip:S.tip==='goal'?null:'goal'}),
+      planResultF:(cfData[1].bal<0?'−':'+')+F(cfData[1].bal), planResultColor:cfData[1].bal<0?'#A6432E':'#176A4E',
+      billsTotalF:F(billsTotal), billsPaidLine:'zaplaceno '+billsPaidCount+'/'+billsArr.length,
+      debtBills:debts.map(d=>({ n:d.n.replace(' — nedoplatek',' splátka'), dayF:d.day+'.', amtF:F(d.pay) })),
+      debtRows:debts.map((d,i)=>{
+        const total=d.total||d.rest, paid=Math.max(0,total-d.rest);
+        const ms=d.pay>0?Math.ceil(d.rest/d.pay):0, ix=9+Math.max(0,ms-1);
+        return { n:d.n, restF:F(d.rest), totalF:F(total), paidF:F(paid), payF:F(d.pay), dayF:d.day+'.', acc:d.acc, vs:'VS '+d.vs,
+          paidW:(total?Math.min(100,paid/total*100):0).toFixed(1)+'%',
+          cleanLabel:ms>0?MN[ix%12]+' '+(2026+Math.floor(ix/12)):'—',
+          payOpen:S.payIdx===i,
+          openPay:()=>this.setState({payIdx:i,payVals:{a:String(d.pay),d:'20. 10.'},eKey:null,aKey:null}),
+          cancelPay:()=>this.setState({payIdx:null}),
+          savePay:()=>{ const v=this.num((S.payVals||{}).a); if(!v){ this.showToast('doplň částku'); return; }
+            const dd=debts.slice(); dd[i]={...d,rest:Math.max(0,d.rest-v)};
+            this.setState({debts:dd,payIdx:null}); this.showToast('Zaznamenáno '+F(v)+' Kč — '+d.n); },
+          ...this.rowOps('debts',i,d,v=>({n:(v.n||'').trim()||d.n,rest:this.num(v.rest)||d.rest,pay:this.num(v.pay)||d.pay,day:this.num(v.day)||d.day}),'Dluh'),
+          remove:()=>{ const dd=debts.slice(); dd.splice(i,1); this.setState({debts:dd}); this.showToast('Dluh odebrán: '+d.n); } };
+      }),
+      debtNone:debts.length===0,
+      dName:S.dName, setDName:e=>this.setState({dName:e.target.value}),
+      dRest:S.dRest, setDRest:e=>this.setState({dRest:e.target.value}),
+      dPay:S.dPay, setDPay:e=>this.setState({dPay:e.target.value}),
+      dDay:S.dDay, setDDay:e=>this.setState({dDay:e.target.value}),
+      dErr:S.dErr,
+      addDebt:()=>{ const rr=parseInt(String(S.dRest).replace(/\s/g,''),10), pp=parseInt(String(S.dPay).replace(/\s/g,''),10), dy=parseInt(S.dDay,10)||20;
+        if(!S.dName.trim()||!rr||!pp){ this.setState({dErr:'doplň věřitele, zbývající částku a splátku'}); return; }
+        this.setState({debts:[...debts,{id:Date.now(),n:S.dName.trim(),rest:rr,pay:pp,day:dy,acc:'—',vs:'—'}],dName:'',dRest:'',dPay:'',dDay:'',dErr:null});
+        this.showToast('Dluh přidán'); },
+      resc:this.buildRes(cashData,360,204,{padL:44,padR:14,padT:20,padB:34}),
+      trendRows, avgRows:this.AVGS.map(a=>({n:a[0],amtF:F(a[1])})),
+      tabs:TABS.map(t=>{ const active=S.tab===t[0]||(t[0]==='vic'&&(S.tab==='subs'||S.tab==='vyvoj'||S.tab==='dluhy'));
+        return { label:t[1], iconHtml:{__html:this.ICONS[t[0]]},
+          color:active?'#0E3E2E':'#7E958A', weight:active?700:500,
+          click:()=>this.setState({tab:t[0],editChip:null,tip:null,tapDay:null}) }; }),
+      vydajeF:F(vydaje), planovaneF:F(plannedNet), zbyvaF:(zbyva<0?'−':'')+F(zbyva),
+      sporeniF:F(sav), naUtratuF:(naUtratu<0?'−':'')+F(naUtratu), tempoF:F(tempo),
+      projF:(projEnd<0?'−':'+')+F(projEnd), projColor:projEnd<0?'#9A5B22':'#176A4E', showProj,
+      chainTipText:'Zbývá '+F(zbyva)+' − spoření '+F(sav)+' = '+F(naUtratu)+' Kč na útratu. Děleno 9 zbývajícími dny = '+F(tempo)+' Kč na den.',
+      projTipText:'Zatím utrácíš průměrně '+F(avgDaily)+' Kč denně (variabilní výdaje '+F(varSpend)+' Kč ÷ 21 dní). Stejným tempem utratíš do konce měsíce ještě asi '+F(projSpend)+' Kč, tedy o '+F(projEnd)+' Kč '+(projEnd<0?'víc':'míň')+', než zbývá.',
+      tipChain:S.tip==='chain', tipProj:S.tip==='proj',
+      chainTipTap:()=>this.setState({tip:S.tip==='chain'?null:'chain'}),
+      projTipTap:()=>this.setState({tip:S.tip==='proj'?null:'proj'}),
+      heatWeeks, catBars, planningRows,
+      billsAll, oneOffRows, annualThis, annualNone:annualThis.length===0,
+      annualNextText:'–',
+      remainTotalF:F(duties),
+      subs, subsTotalF:F(subsTotal), subsManage,
+      simAny:sim.length>0, simMonthF:'+'+F(simMonth), simYearF:'+'+F(simMonth*12),
+      simLabel:sim.length?'zkoušíš zrušit '+sim.length+' — ušetříš':'zkus zrušit — uvidíš, kolik ušetříš',
+      clearSim:()=>this.setState({cancelSim:[]}), checklist, annualManage, feed,
+      subsOpen:S.subsOpen, toggleSubs:()=>this.setState({subsOpen:!S.subsOpen}),
+      subsChevron:S.subsOpen?'rotate(90deg)':'none',
+      cf:this.buildCF(cfData,360,200,{padL:40,padR:14,padT:20,padB:34}),
+      detectShow:autoDet&&!S.detectDone,
+      detectAdd:()=>{ this.setState({detectDone:true}); this.showToast('Přidáno mezi předplatná'); },
+      detectNo:()=>{ this.setState({detectDone:true}); this.showToast('Dobře — příště to nenavrhnu'); },
+      castkaActive:S.savMode==='castka', procentoActive:S.savMode==='procento',
+      radAmtC:S.savMode==='castka'?'#176A4E':'rgba(14,62,46,0.3)', radPctC:S.savMode==='procento'?'#176A4E':'rgba(14,62,46,0.3)',
+      setModeCastka:()=>this.setState({savMode:'castka'}), setModeProcento:()=>this.setState({savMode:'procento'}),
+      savAmt:S.savAmt, setSavAmt:e=>this.setState({savAmt:e.target.value}),
+      savPct:S.savPct, setSavPct:e=>this.setState({savPct:e.target.value}),
+      savBasis:S.savMode==='procento'?S.savPct+' % z příjmů 63 000 Kč — Bilance s tím počítá':'pevná částka — Bilance s tím počítá',
+      q:S.q, setQ:e=>this.setState({q:e.target.value}),
+      whoOpts:['Vše','L','V'].map(o=>({label:o,active:S.who===o,click:()=>this.setState({who:o})})),
+      catChips:['Vše',...catNames].map(cn=>({label:cn,active:S.cat===cn,textColor:S.cat===cn?'#F2F7F3':'#0E3E2E',click:()=>this.setState({cat:cn})})),
+      txGroups, txEmpty:txGroups.length===0,
+      clearFilters:()=>this.setState({q:'',who:'Vše',cat:'Vše'}),
+      limitRows, limitVal:S.limitVal, setLimitVal:e=>this.setState({limitVal:e.target.value}),
+      addName:S.addName, setAddName:e=>this.setState({addName:e.target.value}),
+      addAmt:S.addAmt, setAddAmt:e=>this.setState({addAmt:e.target.value}),
+      typeOpts:[['výdaj',!S.addInc,false],['příjem',S.addInc,true]].map(o=>({label:o[0],active:o[1],
+        color:o[1]?'#0E3E2E':'#7E958A',weight:o[1]?600:500,click:()=>this.setState({addInc:o[2]})})),
+      freqOpts:['jednorázově','měsíčně'].map(f=>({label:f,active:S.addFreq===f,
+        color:S.addFreq===f?'#0E3E2E':'#7E958A',weight:S.addFreq===f?600:500,click:()=>this.setState({addFreq:f})})),
+      addErr:S.addErr,
+      addItem:()=>{ const v=parseInt(S.addAmt.replace(/\s/g,''),10);
+        if(!S.addName.trim()||!v||v<=0){ this.setState({addErr:'doplň název a částku'}); return; }
+        this.setState({planning:[...S.planning,{n:S.addName.trim(),a:v,inc:S.addInc,freq:S.addFreq}],addName:'',addAmt:'',addErr:null});
+        this.showToast('Přidáno do plánování'); },
+      sheetOpen:S.sheetOpen,
+      openSheet:()=>this.setState({sheetOpen:true,sheetErr:null}),
+      closeSheet:()=>this.setState({sheetOpen:false}),
+      sn:S.sn, setSn:e=>this.setState({sn:e.target.value}),
+      sa:S.sa, setSa:e=>this.setState({sa:e.target.value}),
+      sheetCats:catNames.filter(c=>c!=='Bydlení').map(cn=>({label:cn,active:S.sc===cn,textColor:S.sc===cn?'#F2F7F3':'#0E3E2E',click:()=>this.setState({sc:cn})})),
+      sheetWho:['L','V'].map(o=>({label:o,active:S.sw===o,click:()=>this.setState({sw:o})})),
+      sheetErr:S.sheetErr,
+      saveSheet:()=>{ const v=parseInt(S.sa.replace(/\s/g,''),10);
+        if(!v||v<=0||!S.sn.trim()){ this.setState({sheetErr:'doplň částku a obchodníka'}); return; }
+        this.setState({ txs:[...txs,{id:S.nextId,d:21,n:S.sn.trim(),c:S.sc,a:v,w:S.sw}], nextId:S.nextId+1,
+          sheetOpen:false, sn:'', sa:'', sheetErr:null });
+        this.showToast('Zapsáno: '+S.sn.trim()+' −'+F(v)+' Kč'); },
+      toast:S.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

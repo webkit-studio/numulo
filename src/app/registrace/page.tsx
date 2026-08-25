@@ -1,35 +1,21 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getEnvVar, hasTurnstile } from "@/lib/env";
+import { AuthShell } from "@/components/auth-shell";
 import { RegisterForm } from "./register-form";
 
-export const metadata: Metadata = { title: "numo — registrace" };
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Numulo — registrace" };
 
 export default function RegisterPage() {
-  const siteKey = getEnvVar("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
-
   return (
-    <main className="login-screen">
-      <div className="login-card">
-        <h1 className="login-wordmark">numo</h1>
-        <p className="login-lede">Založ si účet.</p>
+    <AuthShell
+      title="Založ si účet"
+      lede="Nejdřív účet pro sebe. Domácnost si pak založíš, nebo se k ní připojíš kódem."
+    >
+      <RegisterForm />
 
-        {hasTurnstile() && siteKey ? (
-          <RegisterForm siteKey={siteKey} />
-        ) : (
-          <>
-            {/* Saying it plainly beats a form that fails on submit. */}
-            <p className="login-error">
-              Registrace je zavřená — chybí nastavení ochrany proti botům
-              (TURNSTILE_SECRET_KEY a NEXT_PUBLIC_TURNSTILE_SITE_KEY).
-            </p>
-            <p className="login-alt">
-              <Link href="/login">Zpět na přihlášení</Link>
-            </p>
-          </>
-        )}
+      <div className="auth-links">
+        <Link href="/prihlaseni">Už účet máš? Přihlas se</Link>
       </div>
-    </main>
+    </AuthShell>
   );
 }

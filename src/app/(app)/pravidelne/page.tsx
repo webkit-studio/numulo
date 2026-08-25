@@ -1,28 +1,21 @@
+import Link from "next/link";
 import type { Metadata } from "next";
-import { CrudList } from "@/components/crud/crud-list";
-import type { CrudItem } from "@/components/crud/types";
-import { MonthLabel } from "@/components/money";
+import { Money } from "@/components/money";
 import { MonthPicker } from "@/components/month-picker";
-import {
-  getDebts,
-  getPaidThisMonth,
-  getRecurringMonthly,
-  getRecurringYearly,
-  getSubscriptions,
-} from "@/lib/data/plan";
-import { getDefaultMonth, getMonthsWithData } from "@/lib/data/queries";
-import { formatCzk, halereToCzk } from "@/lib/money";
-import { CancelSimulator } from "./cancel-sim";
-import { DetectedSubscriptions } from "./detected";
-import { PaidToggle } from "./paid-toggle";
+import { Detected } from "./detected";
+import { PaidList, type PayableRow } from "./paid-list";
+import { Subscriptions, type SubscriptionRow } from "./subscriptions";
+import { createClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/data/household";
+import { getListRows } from "@/lib/data/lists";
+import { getMonthsWithData, resolveMonth, todayIso } from "@/lib/data/months";
+import { detectSubscriptions } from "@/lib/recurring/detect";
+import { estimatePayoff } from "@/lib/calc";
+import { lastMonths, monthStart, monthNameOnly } from "@/lib/date";
+import { formatCzk } from "@/lib/money";
 
-export const metadata: Metadata = { title: "numo — pravidelné" };
+export const metadata: Metadata = { title: "Numulo — pravidelné" };
 export const dynamic = "force-dynamic";
-
-const MONTH_NAMES = [
-  "lednu", "únoru", "březnu", "dubnu", "květnu", "červnu",
-  "červenci", "srpnu", "září", "říjnu", "listopadu", "prosinci",
-];
 
 export default async function RecurringPage({
   searchParams,
@@ -30,322 +23,231 @@ export default async function RecurringPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const today = new Date().toISOString().slice(0, 10);
+  const { household } = await getSession();
+  if (!household) return null;
 
-  const months = await getMonthsWithData();
-  const requested = typeof params.mesic === "string" ? params.mesic : null;
-  const month =
-    requested && months.includes(requested)
-      ? requested
-      : await getDefaultMonth(today);
+  const today = todayIso();
+  const months = await getMonthsWithData(household.id, today);
+  const month = resolveMonth(params.mesic, months, today);
 
-  const [subs, monthly, yearly, debtRows, paid] = await Promise.all([
-    getSubscriptions(),
-    getRecurringMonthly(),
-    getRecurringYearly(),
-    getDebts(),
-    getPaidThisMonth(month),
+  const supabase = await createClient();
+  const [subscriptionRows, monthlyRows, yearlyRows, debtRows] = await Promise.all([
+    getListRows(household.id, "subscriptions"),
+    getListRows(household.id, "monthly"),
+    getListRows(household.id, "yearly"),
+    getListRows(household.id, "debts"),
   ]);
 
-  const monthNumber = Number(month.slice(5, 7));
+  const [{ data: paidRows }, { data: detectionRows }, { data: ignoreRows }] = await Promise.all([
+    supabase
+      .from("recurring_payments")
+      .select("item_type, item_id")
+      .eq("household_id", household.id)
+      .eq("month", month),
+    supabase
+      .from("transactions")
+      .select("date, amount, merchant")
+      .eq("household_id", household.id)
+      .lt("amount", 0)
+      .eq("is_business", false)
+      .eq("is_transfer", false)
+      .gte("date", monthStart(lastMonths(month, 6)[0])),
+    supabase
+      .from("rules")
+      .select("pattern")
+      .eq("household_id", household.id)
+      .eq("kind", "merchant->not_subscription"),
+  ]);
 
-  const perMonth =
-    subs.reduce((sum, item) => (item.active ? sum + item.amount : sum), 0) +
-    monthly.reduce((sum, item) => (item.active ? sum + item.amount : sum), 0);
+  const paid = new Set((paidRows ?? []).map((row) => `${row.item_type}:${row.item_id}`));
 
-  const perYear =
-    perMonth * 12 +
-    yearly.reduce((sum, item) => (item.active ? sum + item.amount : sum), 0);
+  /* ── souhrny ────────────────────────────────────────────────────────── */
+
+  const activeSubs = subscriptionRows.filter((row) => row.active);
+  const activeMonthly = monthlyRows.filter((row) => row.active);
+  const monthNo = Number(month.slice(5, 7));
+  const dueYearly = yearlyRows.filter((row) => row.active && row.due_month === monthNo);
+
+  const subscriptionTotal = activeSubs.reduce((sum, row) => sum + Number(row.amount), 0);
+  const monthlyTotal = activeMonthly.reduce((sum, row) => sum + Number(row.amount), 0);
+
+  // §3.4: the ratio is over the monthly payments. Subscriptions still count
+  // towards the money outstanding, just not towards the tick-list.
+  const dueCount = activeMonthly.length;
+  const paidCount = activeMonthly.filter((row) => paid.has(`monthly:${row.id}`)).length;
 
   const outstanding =
-    subs.filter((s) => s.active && !paid.has(`subscription:${s.id}`)).length +
-    monthly.filter((m) => m.active && !paid.has(`monthly:${m.id}`)).length +
-    yearly.filter(
-      (y) => y.active && y.dueMonth === monthNumber && !paid.has(`yearly:${y.id}`),
-    ).length;
+    activeSubs.reduce(
+      (sum, row) => (paid.has(`subscription:${row.id}`) ? sum : sum + Number(row.amount)),
+      0,
+    ) +
+    activeMonthly.reduce(
+      (sum, row) => (paid.has(`monthly:${row.id}`) ? sum : sum + Number(row.amount)),
+      0,
+    ) +
+    dueYearly.reduce((sum, row) => (paid.has(`yearly:${row.id}`) ? sum : sum + Number(row.amount)), 0);
 
-  const subItems: CrudItem[] = subs.map((item) => ({
-    id: item.id,
-    title: item.name,
-    meta: [
-      item.day ? `strhává se ${item.day}.` : "bez pevného dne",
-      item.active ? null : "zrušené",
-      item.status === "detected" ? "návrh" : null,
-    ]
-      .filter(Boolean)
-      .join(" · "),
-    amount: item.amount,
-    muted: !item.active,
-    values: {
-      name: item.name,
-      amount: halereToCzk(item.amount),
-      day: item.day ?? "",
-      active: item.active,
-    },
+  /* ── auto-detekce ───────────────────────────────────────────────────── */
+
+  const known = new Set([
+    ...activeSubs.map((row) => String(row.name).trim().toLowerCase()),
+    ...activeMonthly.map((row) => String(row.name).trim().toLowerCase()),
+    ...(ignoreRows ?? []).map((row) => String(row.pattern)),
+  ]);
+
+  const candidates = detectSubscriptions(
+    (detectionRows ?? [])
+      .filter((row) => row.merchant)
+      .map((row) => ({
+        merchant: String(row.merchant),
+        amount: -Number(row.amount),
+        month: String(row.date).slice(0, 7),
+        day: Number(String(row.date).slice(8, 10)),
+      })),
+    { latestMonth: month },
+  )
+    .filter((candidate) => candidate.stillRunning)
+    .filter((candidate) => !known.has(candidate.name.trim().toLowerCase()))
+    .slice(0, 3);
+
+  /* ── řádky ──────────────────────────────────────────────────────────── */
+
+  const subscriptions: SubscriptionRow[] = subscriptionRows.map((row) => ({
+    id: row.id,
+    name: String(row.name),
+    amount: Number(row.amount),
+    day: row.day === null ? null : Number(row.day),
+    simulated: Boolean(row.simulated_cancel),
+    values: row,
   }));
 
-  const monthlyItems: CrudItem[] = monthly.map((item) => ({
-    id: item.id,
-    title: item.name,
-    meta: [item.day ? `splatnost ${item.day}.` : "bez pevného dne", item.active ? null : "vypnuté"]
-      .filter(Boolean)
-      .join(" · "),
-    amount: item.amount,
-    muted: !item.active,
-    values: {
-      name: item.name,
-      amount: halereToCzk(item.amount),
-      day: item.day ?? "",
-      active: item.active,
-    },
+  const monthly: PayableRow[] = monthlyRows.map((row) => ({
+    id: row.id,
+    name: String(row.name),
+    amount: Number(row.amount),
+    day: row.day === null ? null : Number(row.day),
+    dueMonth: null,
+    paid: paid.has(`monthly:${row.id}`),
+    values: row,
   }));
 
-  const yearlyItems: CrudItem[] = yearly.map((item) => ({
-    id: item.id,
-    title: item.name,
-    meta: `platí se v ${MONTH_NAMES[item.dueMonth - 1] ?? item.dueMonth}${
-      item.active ? "" : " · vypnuté"
-    }`,
-    amount: item.amount,
-    muted: !item.active,
-    values: {
-      name: item.name,
-      amount: halereToCzk(item.amount),
-      dueMonth: item.dueMonth,
-      active: item.active,
-    },
+  const yearly: PayableRow[] = yearlyRows.map((row) => ({
+    id: row.id,
+    name: String(row.name),
+    amount: Number(row.amount),
+    day: null,
+    dueMonth: Number(row.due_month),
+    paid: paid.has(`yearly:${row.id}`),
+    // A tick on a premium that is not due for five months would be a lie
+    // waiting to happen; the badge already says when it lands.
+    tickable: Number(row.due_month) === monthNo,
+    values: row,
   }));
 
-  // Instalments live on Dluhy — here they are context, so the monthly total is
-  // not silently missing a few thousand crowns.
-  const debtItems: CrudItem[] = debtRows
-    .filter((debt) => debt.active)
-    .map((debt) => ({
-      id: debt.id,
-      title: `Splátka — ${debt.creditor}`,
-      meta: debt.installmentDay
-        ? `splatnost ${debt.installmentDay}. · spravuje se v Dluzích`
-        : "spravuje se v Dluzích",
-      amount: debt.installmentAmount,
-      muted: true,
-      values: {},
-    }));
-
-  const cancellable = [
-    ...subs.filter((item) => item.active).map((item) => ({
-      id: item.id,
-      name: item.name,
-      amount: item.amount,
-    })),
-    ...monthly.filter((item) => item.active).map((item) => ({
-      id: item.id + 100_000, // keep the two id spaces apart in the simulator
-      name: item.name,
-      amount: item.amount,
-    })),
-  ];
+  const debts = debtRows.filter((row) => row.active && Number(row.installment_amount) > 0);
 
   return (
     <>
       <header className="page-head">
         <div>
-          <h1>Pravidelné</h1>
+          <h1 className="page-title">Pravidelné</h1>
           <p className="page-sub">
-            <MonthLabel month={month} /> ·{" "}
-            {subs.length + monthly.length + yearly.length === 0
-              ? "zatím tu nic pravidelného není"
-              : outstanding === 0
-                ? "všechno zaplacené"
-                : `${outstanding} k zaplacení`}
+            předplatná <Money value={subscriptionTotal} tone="plain" />/měs · měsíční platby{" "}
+            <Money value={monthlyTotal} tone="plain" /> · zaplaceno{" "}
+            <span className="num">{paidCount}/{dueCount}</span> · zbývá zaplatit{" "}
+            <Money value={outstanding} tone="plain" />
           </p>
         </div>
-        <MonthPicker months={months} current={month} basePath="/pravidelne" />
+        <MonthPicker months={months.all} current={month} />
       </header>
 
-      <section className="tiles">
-        <article className="tile">
-          <h2>Měsíčně</h2>
-          <p className="tile-value numo-numeric">{formatCzk(perMonth)}</p>
-          <p className="tile-note">předplatná + měsíční platby</p>
-        </article>
-        <article className="tile">
-          <h2>Ročně</h2>
-          <p className="tile-value numo-numeric">{formatCzk(perYear)}</p>
-          <p className="tile-note">včetně ročních plateb</p>
-        </article>
-        <article className="tile">
-          <h2>Splátky dluhů</h2>
-          <p className="tile-value numo-numeric">
-            {formatCzk(
-              debtRows.reduce(
-                (sum, debt) => (debt.active ? sum + debt.installmentAmount : sum),
-                0,
-              ),
-            )}
-          </p>
-          <p className="tile-note">měsíčně, mimo rozpočet</p>
-        </article>
-      </section>
+      <Detected householdId={household.id} candidates={candidates} />
 
       <section className="card">
-        <header className="card-head">
-          <h2>Předplatná</h2>
-          <p className="card-sub">
-            Malé částky, které odcházejí samy. Odškrtni, co je za{" "}
-            <MonthLabel month={month} /> zaplacené.
-          </p>
-        </header>
-        <CrudList
-          endpoint="/api/subscriptions"
-          describe="Předplatné"
-          addLabel="+ přidat předplatné"
-          emptyNote="Zatím žádná předplatná. Zkus je nechat najít ve výpisu níž."
-          items={subItems.map((item) => ({
-            ...item,
-            meta: item.meta,
-          }))}
-          fields={SUBSCRIPTION_FIELDS}
-        />
-
-        <div className="paid-strip">
-          {subs
-            .filter((item) => item.active)
-            .map((item) => (
-              <PaidToggle
-                key={item.id}
-                itemType="subscription"
-                itemId={item.id}
-                month={month}
-                paid={paid.has(`subscription:${item.id}`)}
-                label={item.name}
-              />
-            ))}
+        <div className="card-head">
+          <h2 className="card-title">Předplatná</h2>
+          <span className="card-sub">
+            <Money value={subscriptionTotal} tone="plain" />/měs
+          </span>
         </div>
+        <Subscriptions householdId={household.id} rows={subscriptions} />
       </section>
 
       <section className="card">
-        <header className="card-head">
-          <h2>Najít ve výpisu</h2>
-          <p className="card-sub">
-            Pravidelné platby se poznají počítáním, ne odhadem — stejná částka
-            u stejného obchodníka nejmíň třikrát.
-          </p>
-        </header>
-        <DetectedSubscriptions />
-      </section>
-
-      <section className="card">
-        <header className="card-head">
-          <h2>Měsíční platby</h2>
-          <p className="card-sub">Nájem, energie, telefon — velké pravidelné výdaje.</p>
-        </header>
-        <CrudList
-          endpoint="/api/recurring-monthly"
-          describe="Platba"
-          addLabel="+ přidat měsíční platbu"
-          items={monthlyItems}
-          fields={MONTHLY_FIELDS}
-        />
-
-        <div className="paid-strip">
-          {monthly
-            .filter((item) => item.active)
-            .map((item) => (
-              <PaidToggle
-                key={item.id}
-                itemType="monthly"
-                itemId={item.id}
-                month={month}
-                paid={paid.has(`monthly:${item.id}`)}
-                label={item.name}
-              />
-            ))}
+        <div className="card-head">
+          <h2 className="card-title">Měsíční platby</h2>
+          <span className="card-sub">
+            zaplaceno <span className="num">{paidCount}/{dueCount}</span>
+          </span>
         </div>
 
-        {debtItems.length > 0 ? (
-          <>
-            <p className="card-sub card-sub-inline">
-              A k tomu splátky dluhů — počítají se do měsíce, ale mění se na
-              stránce Dluhy.
-            </p>
-            <ul className="crud-list">
-              {debtItems.map((item) => (
-                <li key={item.id} className="crud-row is-muted">
-                  <span className="crud-main">
-                    <span className="crud-title">{item.title}</span>
-                    <span className="crud-meta">{item.meta}</span>
-                  </span>
-                  <span className="numo-numeric crud-amount">
-                    {formatCzk(item.amount ?? 0)}
-                  </span>
-                  <span className="crud-actions crud-actions-empty" />
-                </li>
-              ))}
+        <PaidList
+          householdId={household.id}
+          listKey="monthly"
+          kind="monthly"
+          month={month}
+          rows={monthly}
+          empty="Zatím žádné měsíční platby."
+        />
+
+        {debts.length > 0 ? (
+          <div className="debt-note">
+            <ul className="crud crud-quiet">
+              {debts.map((row) => {
+                const payoff = estimatePayoff(
+                  {
+                    remainingAmount: Number(row.remaining_amount),
+                    installmentAmount: Number(row.installment_amount),
+                    active: true,
+                  },
+                  month,
+                );
+                return (
+                  <li key={row.id} className="crud-row">
+                    <div className="crud-view">
+                      <span className="crud-name">
+                        {String(row.creditor)}
+                        <Link href="/dluhy" className="badge badge-link">dluh</Link>
+                        {row.installment_day ? (
+                          <span className="crud-day">{Number(row.installment_day)}.</span>
+                        ) : null}
+                      </span>
+                      <span className="crud-amount">
+                        <Money value={Number(row.installment_amount)} tone="plain" />
+                        {payoff.cleanBy ? (
+                          <span className="crud-hint">čistý ~{monthNameOnly(payoff.cleanBy)}</span>
+                        ) : null}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
-          </>
+            <p className="quiet-note">
+              Splátky dluhů jsou uvnitř plateb výš — do součtů se nepřičítají znovu.
+            </p>
+          </div>
         ) : null}
       </section>
 
       <section className="card">
-        <header className="card-head">
-          <h2>Roční platby</h2>
-          <p className="card-sub">
-            Pojistky, domény, poplatky. Připomenou se v měsíci splatnosti.
-          </p>
-        </header>
-        <CrudList
-          endpoint="/api/recurring-yearly"
-          describe="Roční platba"
-          addLabel="+ přidat roční platbu"
-          items={yearlyItems}
-          fields={YEARLY_FIELDS}
-        />
-
-        <div className="paid-strip">
-          {yearly
-            .filter((item) => item.active && item.dueMonth === monthNumber)
-            .map((item) => (
-              <PaidToggle
-                key={item.id}
-                itemType="yearly"
-                itemId={item.id}
-                month={month}
-                paid={paid.has(`yearly:${item.id}`)}
-                label={item.name}
-              />
-            ))}
+        <div className="card-head">
+          <h2 className="card-title">Roční platby</h2>
+          {dueYearly.length > 0 ? (
+            <span className="card-sub">
+              tento měsíc {formatCzk(dueYearly.reduce((s, r) => s + Number(r.amount), 0))}
+            </span>
+          ) : null}
         </div>
-      </section>
-
-      <section className="card">
-        <header className="card-head">
-          <h2>Co když to zrušíme</h2>
-          <p className="card-sub">
-            Nic se neuloží — je to jen počítání nahlas.
-          </p>
-        </header>
-        <CancelSimulator items={cancellable} />
+        <PaidList
+          householdId={household.id}
+          listKey="yearly"
+          kind="yearly"
+          month={month}
+          rows={yearly}
+          empty="Zatím žádné roční platby — pojištění, známka, daně."
+        />
       </section>
     </>
   );
 }
-
-const SUBSCRIPTION_FIELDS = [
-  { name: "name", label: "Název", type: "text" as const, required: true },
-  { name: "amount", label: "Částka (Kč)", type: "money" as const, required: true, half: true },
-  { name: "day", label: "Den v měsíci", type: "int" as const, half: true, hint: "1–31, nepovinné" },
-  { name: "active", label: "Běží", type: "bool" as const },
-];
-
-const MONTHLY_FIELDS = [
-  { name: "name", label: "Název", type: "text" as const, required: true },
-  { name: "amount", label: "Částka (Kč)", type: "money" as const, required: true, half: true },
-  { name: "day", label: "Den splatnosti", type: "int" as const, half: true, hint: "1–31, nepovinné" },
-  { name: "active", label: "Aktivní", type: "bool" as const },
-];
-
-const YEARLY_FIELDS = [
-  { name: "name", label: "Název", type: "text" as const, required: true },
-  { name: "amount", label: "Částka (Kč)", type: "money" as const, required: true, half: true },
-  { name: "dueMonth", label: "Měsíc splatnosti", type: "int" as const, required: true, half: true, hint: "1–12" },
-  { name: "active", label: "Aktivní", type: "bool" as const },
-];

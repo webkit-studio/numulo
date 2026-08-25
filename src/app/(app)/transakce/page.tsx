@@ -1,21 +1,17 @@
 import type { Metadata } from "next";
 import { MonthPicker } from "@/components/month-picker";
-import { TransactionList } from "@/components/transaction-list";
+import { Money } from "@/components/money";
 import { TransactionFilters } from "./filters";
-import {
-  getCategories,
-  getDefaultMonth,
-  getMonthsWithData,
-  getReviewCount,
-  getTransactions,
-  getUsers,
-} from "@/lib/data/queries";
+import { EditableTransactions } from "./editable-transactions";
+import { getMembers, getSession } from "@/lib/data/household";
+import { getMonthSnapshot } from "@/lib/data/month";
+import { getMonthsWithData, resolveMonth, todayIso } from "@/lib/data/months";
 
-export const metadata: Metadata = { title: "numo — transakce" };
+export const metadata: Metadata = { title: "Numulo — transakce" };
 export const dynamic = "force-dynamic";
 
-const one = (value: string | string[] | undefined): string | null =>
-  typeof value === "string" && value !== "" ? value : null;
+const one = (v: string | string[] | undefined) =>
+  typeof v === "string" && v !== "" ? v : null;
 
 export default async function TransactionsPage({
   searchParams,
@@ -23,40 +19,39 @@ export default async function TransactionsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const today = new Date().toISOString().slice(0, 10);
+  const { household } = await getSession();
+  if (!household) return null;
 
-  const months = await getMonthsWithData();
-  const requested = one(params.mesic);
-  const month =
-    requested && months.includes(requested)
-      ? requested
-      : await getDefaultMonth(today);
-
-  const search = one(params.hledat);
-  const ownerId = one(params.kdo);
-  const categoryId = one(params.kategorie);
-  const business = one(params.podnikani) === "1";
-  const transfer = one(params.prevody) === "1";
-  const reviewOnly = one(params.schvalit) === "1";
-
-  const [transactions, categories, users, reviewCount] = await Promise.all([
-    getTransactions({
-      month,
-      search: search ?? undefined,
-      ownerId: ownerId ? Number(ownerId) : undefined,
-      categoryId: categoryId ? Number(categoryId) : undefined,
-      business,
-      transfer,
-      reviewOnly,
-      limit: 500,
-    }),
-    getCategories(),
-    getUsers(),
-    getReviewCount(),
+  const today = todayIso();
+  const months = await getMonthsWithData(household.id, today);
+  const month = resolveMonth(params.mesic, months, today);
+  const [snapshot, members] = await Promise.all([
+    getMonthSnapshot(household, month, today),
+    getMembers(household.id),
   ]);
 
-  const spent = transactions.reduce(
-    (total, row) => (row.amount < 0 ? total - row.amount : total),
+  const search = one(params.hledat)?.toLowerCase() ?? null;
+  const categoryId = one(params.kategorie);
+  const ownerId = one(params.kdo);
+  const showBusiness = one(params.podnikani) === "1";
+  const showTransfers = one(params.prevody) === "1";
+
+  const visible = snapshot.transactions.filter((tx) => {
+    if (search) {
+      const haystack = `${tx.merchant ?? ""} ${tx.description ?? ""}`.toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    if (categoryId && tx.categoryId !== categoryId) return false;
+    if (ownerId && tx.ownerId !== ownerId) return false;
+    // Business and transfers are out of every household total, so showing them
+    // unasked would make this list disagree with every number on screen.
+    if (!showBusiness && tx.isBusiness) return false;
+    if (!showTransfers && tx.isTransfer) return false;
+    return true;
+  });
+
+  const spent = visible.reduce(
+    (sum, tx) => (tx.amount < 0 && !tx.isBusiness && !tx.isTransfer ? sum - tx.amount : sum),
     0,
   );
 
@@ -64,38 +59,31 @@ export default async function TransactionsPage({
     <>
       <header className="page-head">
         <div>
-          <h1>Transakce</h1>
+          <h1 className="page-title">Transakce</h1>
           <p className="page-sub">
-            {transactions.length} položek · utraceno{" "}
-            <span className="numo-numeric">
-              {new Intl.NumberFormat("cs-CZ", {
-                maximumFractionDigits: 0,
-              }).format(spent / 100)}{" "}
-              Kč
-            </span>
+            {visible.length} položek · utraceno <Money value={spent} tone="plain" />
           </p>
         </div>
-        <MonthPicker months={months} current={month} basePath="/transakce" />
+        <MonthPicker months={months.all} current={month} />
       </header>
 
       <TransactionFilters
-        categories={categories}
-        users={users}
+        categories={snapshot.categories.map((c) => ({ id: c.id, name: c.name, color: c.color }))}
+        members={members.map((m) => ({ id: m.userId, name: m.name }))}
         month={month}
-        search={search}
-        ownerId={ownerId}
+        search={one(params.hledat)}
         categoryId={categoryId}
-        business={business}
-        transfer={transfer}
-        reviewOnly={reviewOnly}
-        reviewCount={reviewCount}
+        ownerId={ownerId}
+        showBusiness={showBusiness}
+        showTransfers={showTransfers}
       />
 
       <section className="card">
-        <TransactionList
-          transactions={transactions}
-          categories={categories}
-          emptyNote="Nic neodpovídá filtrům."
+        <EditableTransactions
+          transactions={visible}
+          categories={snapshot.categories.map((c) => ({ id: c.id, name: c.name, color: c.color }))}
+          members={members}
+          today={today}
         />
       </section>
     </>
