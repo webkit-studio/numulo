@@ -312,12 +312,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* ── motion ──────────────────────────────────────────────────────────── */
 
-@keyframes numo-fade {
+@keyframes numulo-fade {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
 }
 
-.fade { animation: numo-fade 160ms var(--ease) both; }
+.fade { animation: numulo-fade 160ms var(--ease) both; }
 
 @media (prefers-reduced-motion: reduce) {
   .fade { animation: none; }

@@ -188,7 +188,7 @@ const value = (row: Record<string, string>, column: string | null): string =>
   column === null ? "" : (row[column] ?? "").trim();
 
 /**
- * Turns one raw CSV row into the shape numo stores.
+ * Turns one raw CSV row into the shape Numulo stores.
  *
  * A row that cannot be read is returned as an error rather than skipped:
  * a statement that quietly loses three lines is worse than one that refuses
