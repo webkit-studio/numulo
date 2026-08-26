@@ -89,10 +89,14 @@ describe("spoření", () => {
 });
 
 describe("zbývá na útratu", () => {
-  it("is the spec's headline 5 700", () => {
+  // The base is the month's income now, not a configured budget — a conscious
+  // departure from the spec, whose demo household had a fixed 63 000. The
+  // arithmetic is identical, so the spec's figures still pin it: feeding the
+  // demo's 63 000 as income must yield the demo's 5 700.
+  it("matches the spec's headline 5 700 when income equals the demo budget", () => {
     expect(
       computeRemaining({
-        monthlyBudget: MONTHLY_BUDGET,
+        income: MONTHLY_BUDGET,
         spending: Kc(41_200),
         planned: Kc(13_100),
         savings: Kc(3_000),
@@ -100,8 +104,14 @@ describe("zbývá na útratu", () => {
     ).toBe(Kc(5_700));
   });
 
+  it("goes negative when no income is recorded — the truth, not a bug", () => {
+    expect(
+      computeRemaining({ income: 0, spending: Kc(10_000), planned: 0, savings: 0 }),
+    ).toBe(-Kc(10_000));
+  });
+
   it("moves crown for crown when savings change", () => {
-    const base = { monthlyBudget: MONTHLY_BUDGET, spending: Kc(41_200), planned: Kc(13_100) };
+    const base = { income: MONTHLY_BUDGET, spending: Kc(41_200), planned: Kc(13_100) };
     const at3000 = computeRemaining({ ...base, savings: Kc(3_000) });
     const at5000 = computeRemaining({ ...base, savings: Kc(5_000) });
     expect(at3000 - at5000).toBe(Kc(2_000));
@@ -164,14 +174,16 @@ describe("rezerva", () => {
 });
 
 describe("cíl měsíce", () => {
+  // Needed is the month's cost. The spec's 68 000 (budget + instalments)
+  // becomes the cost fed in directly — the missing/covered arithmetic it
+  // pins is unchanged.
   const goal = computeMonthGoal({
-    monthlyBudget: MONTHLY_BUDGET,
-    debtInstalments: Kc(5_000),
+    monthCost: Kc(68_000),
     received: Kc(41_000),
     onTheWay: Kc(24_000),
   });
 
-  it("adds debt instalments on top of the budget — 68 000", () => {
+  it("needs what the month costs — 68 000", () => {
     expect(goal.needed).toBe(Kc(68_000));
   });
 
@@ -182,8 +194,7 @@ describe("cíl měsíce", () => {
 
   it("reports the surplus once the goal is passed", () => {
     const covered = computeMonthGoal({
-      monthlyBudget: MONTHLY_BUDGET,
-      debtInstalments: Kc(5_000),
+      monthCost: Kc(68_000),
       received: Kc(70_000),
       onTheWay: 0,
     });

@@ -27,14 +27,13 @@ export default async function SettingsPage() {
         <div className="card-head">
           <h2 className="card-title">Účet</h2>
           <p className="card-sub">
-            Rozpočet je strop útrat domácnosti — kolik za měsíc smí odejít, ne kolik přijde.
-            Počáteční stav říká Rezervě, odkud začít počítat.
+            Příjmy i výdaje žijí v transakcích — tady je jen to, co se jinam
+            nevejde: název a počáteční stav, od kterého Rezerva počítá.
           </p>
         </div>
         <SettingsForm
           householdId={household.id}
           name={household.name}
-          monthlyBudget={halereToCzk(household.monthly_budget)}
           initialBalance={halereToCzk(household.initial_balance)}
           initialBalanceDate={household.initial_balance_date}
           kind={household.kind}

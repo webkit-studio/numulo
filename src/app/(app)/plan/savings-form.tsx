@@ -18,25 +18,26 @@ export function SavingsForm({
   householdId,
   mode,
   value,
-  monthlyBudget,
+  monthIncome,
 }: {
   householdId: string;
   mode: "amount" | "percent";
   value: number;
-  monthlyBudget: number;
+  /** Income credited this month — what a percentage is a percentage OF. */
+  monthIncome: number;
 }) {
   const [state, action] = useActionState(saveSavings, emptyState);
 
   const [chosen, setChosen] = useState<"amount" | "percent">(mode);
   const [amount, setAmount] = useState(
-    mode === "amount" ? String(halereToCzk(value)) : String(halereToCzk(monthlyBudget * 0.1)),
+    mode === "amount" ? String(halereToCzk(value)) : String(halereToCzk(monthIncome * 0.1)),
   );
   const [percent, setPercent] = useState(mode === "percent" ? String(value) : "10");
 
   const preview =
     chosen === "amount"
       ? Math.round(Number(amount.replace(",", ".")) * 100) || 0
-      : Math.round((monthlyBudget * (Number(percent.replace(",", ".")) || 0)) / 100);
+      : Math.round((Math.max(0, monthIncome) * (Number(percent.replace(",", ".")) || 0)) / 100);
 
   return (
     <form action={action} className="savings">
@@ -76,7 +77,7 @@ export function SavingsForm({
           checked={chosen === "percent"}
           onChange={() => setChosen("percent")}
         />
-        <span>procento</span>
+        <span>% z příjmů</span>
         <span className="field-box">
           <input
             className="input"

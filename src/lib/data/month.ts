@@ -64,7 +64,8 @@ export interface MonthSnapshot {
   /** Day of the month "today" falls on, clamped into the month being viewed. */
   today: number;
   isCurrentMonth: boolean;
-  monthlyBudget: number;
+  /** Income actually credited this month (transfers and business excluded). */
+  income: number;
   spending: number;
   variableSpending: number;
   obligations: number;
@@ -261,13 +262,20 @@ export async function getMonthSnapshot(
 
   /* ── zbývá, limit, rezerva, cíl ─────────────────────────────────────── */
 
+  // Income is what actually arrived this month — never a configured number.
+  // Business income and transfers stay out, the same as on the expense side.
+  const received = transactions.reduce(
+    (sum, tx) => (tx.amount > 0 && !tx.isTransfer && !tx.isBusiness ? sum + tx.amount : sum),
+    0,
+  );
+
   const savings = computeSavings(
     { mode: household.savings_mode, value: Number(household.savings_value) },
-    Number(household.monthly_budget),
+    received,
   );
 
   const remaining = computeRemaining({
-    monthlyBudget: Number(household.monthly_budget),
+    income: received,
     spending,
     planned,
     savings,
@@ -299,14 +307,11 @@ export async function getMonthSnapshot(
     summary.totalOwed,
   );
 
-  const received = transactions.reduce(
-    (sum, tx) => (tx.amount > 0 && !tx.isTransfer ? sum + tx.amount : sum),
-    0,
-  );
-
   const goal = computeMonthGoal({
-    monthlyBudget: Number(household.monthly_budget),
-    debtInstalments: summary.monthlyInstalments,
+    // What the month costs. Debt instalments are not added on top: when they
+    // ride inside a recurring payment they are already in `planned`, and
+    // demanding them twice was exactly the confusion being removed.
+    monthCost: spending + planned + savings,
     received,
     onTheWay: plannedIncome,
   });
@@ -381,7 +386,7 @@ export async function getMonthSnapshot(
     month,
     today,
     isCurrentMonth,
-    monthlyBudget: Number(household.monthly_budget),
+    income: received,
     spending,
     variableSpending,
     obligations,

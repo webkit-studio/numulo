@@ -93,9 +93,9 @@ export default async function PlanPage({
             <h2 className="card-title">
               Cíl měsíce{" "}
               <Info>
-                Rozpočet domácnosti {formatCzk(snapshot.monthlyBudget)} (výdaje + spoření) +
-                splátky dluhů {formatCzk(goal.needed - snapshot.monthlyBudget)} ={" "}
-                {formatCzk(goal.needed)}.
+                Kolik měsíc stojí: výdaje {formatCzk(snapshot.spending)} + plánované{" "}
+                {formatCzk(snapshot.planned)} + spoření {formatCzk(snapshot.savings)} ={" "}
+                {formatCzk(goal.needed)}. Splátky dluhů jsou uvnitř pravidelných plateb.
               </Info>
             </h2>
           </div>
@@ -148,7 +148,7 @@ export default async function PlanPage({
             householdId={household.id}
             mode={household.savings_mode as "amount" | "percent"}
             value={Number(household.savings_value)}
-            monthlyBudget={Number(household.monthly_budget)}
+            monthIncome={snapshot.income}
           />
         </section>
       </div>

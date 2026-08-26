@@ -10,7 +10,19 @@ bez rozmyslu.
 
 ---
 
-## 1. Devět pravidel, která platí bez výjimky
+## 1. Deset pravidel, která platí bez výjimky
+
+### Příjmy se čtou z transakcí, nikdy z nastavení
+
+Domácnost má nepravidelné příjmy. Základ pro „zbývá na útratu“, denní
+limit, spoření v procentech i cíl měsíce je **co tenhle měsíc skutečně
+přišlo** (`received` v `month.ts`) plus případné plánované příjmy.
+V nastavení žádný rozpočet není a nemá se tam vracet — vymyšlený základ
+ukazuje peníze, které neexistují. Sloupec `households.monthly_budget`
+v databázi zůstal, ale nikdo ho nečte.
+
+Forecast v cashflow ze stejného důvodu: budoucí příjem je jen ten
+naplánovaný a nic naplánovaného znamená čáru dolů, červeně.
 
 ### Peníze jsou celá čísla haléřů
 
@@ -45,6 +57,11 @@ Z toho plyne:
   a být nemá. Obchází celou RLS.
 - Když dotaz vrací prázdno, první hypotéza je chybějící členství, ne
   chybějící data.
+- **UPDATE a DELETE bez policy tiše projdou s nulou řádků** — žádná chyba.
+  Dvakrát to už kouslo: zápis payloadu do `ai_jobs` po insertu (spadlo PDF)
+  a mazání výpisů ze storage (hromadily se soubory). Když tabulka nemá
+  update/delete policy schválně, piš data celá už v insertu a po každém
+  zápisu, na kterém záleží, kontroluj počet řádků.
 
 Jediné dvě cesty skrz tu zeď jsou `create_household()` a `join_household()` —
 `SECURITY DEFINER` funkce, protože musí zapsat členství do domácnosti, kde

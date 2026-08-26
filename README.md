@@ -21,6 +21,10 @@ v Supabase.
 | **Transakce** | Najdu a opravím konkrétní platbu. |
 | **Import** | Dostanu výpis z banky dovnitř. |
 
+**Příjmy i výdaje se čtou z transakcí — nikde se nic nenastavuje.** Žádný
+měsíční rozpočet v nastavení: co přišlo, je příjem; když nepřišlo nic,
+čísla jsou v mínusu, protože jsou.
+
 Ke každému číslu vede ⓘ s rozpadem, jak vzniklo. Stav se nikdy neříká jen
 barvou — vždycky je u něj slovo (*v klidu / dochází / nad plánem*).
 
@@ -39,9 +43,9 @@ ne podmínka v aplikačním kódu.
 
 ## Import
 
-Bere **CSV i PDF**. CSV se parsuje deterministicky (kódování, oddělovač
-a sloupce si výpis přečte sám); PDF přepíše model a řádky pak jdou do
-tabulek **stejnou cestou jako CSV** — stejný otisk, stejná pravidla:
+Jedno okno, formát je starost Numula: **CSV** se parsuje deterministicky
+(kódování, oddělovač a sloupce si výpis přečte sám), **PDF** přepíše model.
+Obě cesty končí ve stejných dveřích — stejný otisk, stejná pravidla:
 
 - **Přidáno** — sedělo pravidlo, kategorie je nastavená
 - **Duplicitní** — stejný otisk už v databázi je, neuloží se

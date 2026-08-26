@@ -28,12 +28,10 @@ export async function saveHouseholdSettings(
 ): Promise<ActionState> {
   const id = String(form.get("householdId") ?? "");
   const name = String(form.get("name") ?? "").trim();
-  const budget = number(form, "monthlyBudget");
   const balance = number(form, "initialBalance");
   const balanceDate = String(form.get("initialBalanceDate") ?? "").trim();
 
   if (!name) return { error: "Účet musí mít název." };
-  if (budget === null || budget < 0) return { error: "Měsíční rozpočet musí být číslo." };
   // An overdrawn account is still a position, so a negative opening balance
   // is allowed — only nonsense is refused.
   if (balance === null) return { error: "Počáteční stav musí být číslo." };
@@ -46,7 +44,6 @@ export async function saveHouseholdSettings(
     .from("households")
     .update({
       name,
-      monthly_budget: czkToHalere(budget),
       initial_balance: czkToHalere(balance),
       initial_balance_date: balanceDate === "" ? null : balanceDate,
     })

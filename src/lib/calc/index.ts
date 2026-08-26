@@ -80,21 +80,28 @@ export function computePlanned(obligations: number, plannedExpenses: number): nu
 /* ───────────────────────────────────────────────── zbývá na útratu ────── */
 
 export interface RemainingInput {
-  monthlyBudget: number;
+  /**
+   * What the month has to spend from. For a household with irregular income
+   * this is the income that actually arrived — never a number typed into
+   * settings. (The spec's demo used a fixed budget here; that assumption was
+   * dropped deliberately: an invented base shows money that does not exist.)
+   */
+  income: number;
   spending: number;
   planned: number;
   savings: number;
 }
 
 /**
- * zbývá na útratu = rozpočet − výdaje − plánované − spoření
+ * zbývá na útratu = příjmy − výdaje − plánované − spoření
  *
  * The headline number. Savings is subtracted rather than treated as a leftover
  * on purpose: money you intend to keep is not money you may spend, and showing
- * it as spendable is how a savings target quietly never happens.
+ * it as spendable is how a savings target quietly never happens. No income
+ * recorded yet means a negative number — which is the truth, not a bug.
  */
 export function computeRemaining(input: RemainingInput): number {
-  return input.monthlyBudget - input.spending - input.planned - input.savings;
+  return input.income - input.spending - input.planned - input.savings;
 }
 
 export interface SavingsSetting {
@@ -103,11 +110,11 @@ export interface SavingsSetting {
   value: number;
 }
 
-/** spoření = částka, nebo procento z rozpočtu */
-export function computeSavings(setting: SavingsSetting, monthlyBudget: number): number {
+/** spoření = částka, nebo procento ze základu (příjmy měsíce) */
+export function computeSavings(setting: SavingsSetting, base: number): number {
   return setting.mode === "amount"
     ? Math.round(setting.value)
-    : Math.round((monthlyBudget * setting.value) / 100);
+    : Math.round((Math.max(0, base) * setting.value) / 100);
 }
 
 /* ──────────────────────────────────────────── denní limit a projekce ──── */
@@ -194,9 +201,8 @@ export function computeReserve(cash: number, debts: number): Reserve {
 /* ──────────────────────────────────────────────────────── cíl měsíce ──── */
 
 export interface MonthGoalInput {
-  monthlyBudget: number;
-  /** Monthly instalments across active debts. */
-  debtInstalments: number;
+  /** What the month costs: spending so far + planned + savings. */
+  monthCost: number;
   /** Actually credited this month. */
   received: number;
   /** Planned income for this month. */
@@ -204,7 +210,7 @@ export interface MonthGoalInput {
 }
 
 export interface MonthGoal {
-  /** rozpočet + splátky dluhů */
+  /** Kolik měsíc stojí. */
   needed: number;
   received: number;
   onTheWay: number;
@@ -216,14 +222,14 @@ export interface MonthGoal {
 }
 
 /**
- * cíl měsíce = rozpočet + splátky dluhů
+ * cíl měsíce = kolik měsíc stojí, proti tomu co přišlo a co je na cestě
  *
- * Instalments are added on top of the household budget deliberately: that is
- * what makes debts get paid out of what is earned rather than out of the
- * family's spending money.
+ * Debt instalments are NOT added separately: when they ride inside a
+ * recurring payment (the usual case) they are already in the cost, and
+ * adding them again would demand the money twice.
  */
 export function computeMonthGoal(input: MonthGoalInput): MonthGoal {
-  const needed = input.monthlyBudget + input.debtInstalments;
+  const needed = input.monthCost;
   const missing = needed - input.received - input.onTheWay;
   return {
     needed,

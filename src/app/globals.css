@@ -1764,3 +1764,5 @@ button.envelope-action {
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
 }
+
+.dropzone-kind { display: block; margin-top: 4px; font-size: var(--text-2xs); color: var(--ink-3); font-family: var(--font-ui); }

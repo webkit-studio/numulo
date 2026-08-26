@@ -16,13 +16,10 @@ import type { HouseholdRow } from "./household";
  * household's payments is a few thousand rows — small enough that a round trip
  * per chart would cost more than the arithmetic does.
  *
- * The forecast deserves saying out loud: a future month's result is the
- * savings target, because that is what the plan *says* will be left over, and
- * we know nothing else about a month that has not happened. The one-off
- * outgoings we do know about — a yearly premium, a planned expense with a date
- * — are subtracted from cash separately, exactly as §4 has it. That is the
- * whole point of the cash curve: a smooth average never dips, and the dip is
- * the thing worth seeing.
+ * The forecast invents nothing: future income is only what somebody planned
+ * (planned_items), future expenses are the outgoings actually known —
+ * subscriptions, monthly recurring, yearly items due, planned expenses.
+ * No planned income means the line goes down, in red. That is the point.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -78,12 +75,6 @@ export async function getTrends(
     supabase.from("recurring_yearly").select("name, amount, due_month, active").eq("household_id", household.id),
     supabase.from("planned_items").select("*").eq("household_id", household.id).eq("active", true),
   ]);
-
-  const budget = Number(household.monthly_budget);
-  const savings =
-    household.savings_mode === "percent"
-      ? Math.round((budget * Number(household.savings_value)) / 100)
-      : Number(household.savings_value);
 
   const subscriptionTotal = (subscriptionRows ?? [])
     .filter((row) => row.active)

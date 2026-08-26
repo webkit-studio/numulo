@@ -8,14 +8,12 @@ import { SubmitButton } from "@/components/submit-button";
 export function SettingsForm({
   householdId,
   name,
-  monthlyBudget,
   initialBalance,
   initialBalanceDate,
   kind,
 }: {
   householdId: string;
   name: string;
-  monthlyBudget: number;
   initialBalance: number;
   initialBalanceDate: string | null;
   kind: "household" | "business";
@@ -42,20 +40,6 @@ export function SettingsForm({
             disabled
           />
           <span className="field-hint">podnikatelský připravujeme</span>
-        </label>
-
-        <label className="field">
-          <span className="field-label">Měsíční rozpočet (Kč)</span>
-          <input
-            className="input num"
-            type="number"
-            name="monthlyBudget"
-            step="1"
-            min="0"
-            inputMode="decimal"
-            defaultValue={monthlyBudget}
-            required
-          />
         </label>
 
         <label className="field">

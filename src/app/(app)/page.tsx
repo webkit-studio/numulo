@@ -62,8 +62,9 @@ export default async function OverviewPage({
 
         <div className="balance">
           <div className="tile">
-            <span className="tile-label">rozpočet</span>
-            <p className="tile-value"><Money value={snapshot.monthlyBudget} tone="plain" /></p>
+            <span className="tile-label">příjmy</span>
+            <p className="tile-value"><Money value={snapshot.income} tone="plain" sign /></p>
+            <p className="tile-note">co tenhle měsíc přišlo</p>
           </div>
 
           <div className="tile">
@@ -114,9 +115,10 @@ export default async function OverviewPage({
           <h2 className="card-title">
             Denní limit{" "}
             <Info>
-              Zbývá {formatCzk(snapshot.remaining + snapshot.savings)} − spoření{" "}
-              {formatCzk(snapshot.savings)} = {formatCzk(snapshot.remaining)} na útratu.
-              Děleno {limit.daysLeft} zbývajícími dny = {formatCzk(limit.perDay)} na den.
+              Příjmy {formatCzk(snapshot.income)} − výdaje {formatCzk(snapshot.spending)} −
+              plánované {formatCzk(snapshot.planned)} − spoření {formatCzk(snapshot.savings)} ={" "}
+              {formatCzk(snapshot.remaining)} na útratu. Děleno {limit.daysLeft} zbývajícími
+              dny = {formatCzk(limit.perDay)} na den.
             </Info>
           </h2>
         </div>

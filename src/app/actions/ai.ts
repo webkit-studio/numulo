@@ -70,23 +70,27 @@ export async function startPdfExtract(form: FormData): Promise<AiStart> {
 
   const supabase = await createClient();
 
-  const { data: job, error: jobError } = await supabase
-    .from("ai_jobs")
-    .insert({ household_id: householdId, kind: "pdf-extract", payload: {} })
-    .select("id")
-    .single();
-  if (jobError) return { error: jobError.message };
-
-  const path = `${householdId}/${job.id}.pdf`;
+  // Upload FIRST, then insert the job with its payload complete. The order
+  // matters because ai_jobs deliberately has no update policy for users —
+  // only the worker's service role may touch a job after it exists. An
+  // earlier version inserted an empty payload and "filled it in" with an
+  // update, which RLS silently turned into updating zero rows.
+  const path = `${householdId}/${crypto.randomUUID()}.pdf`;
   const { error: uploadError } = await supabase.storage
     .from("statements")
     .upload(path, file, { contentType: "application/pdf" });
   if (uploadError) return { error: uploadError.message };
 
-  await supabase
+  const { data: job, error: jobError } = await supabase
     .from("ai_jobs")
-    .update({ payload: { storage_path: path, instructions, filename: file.name } })
-    .eq("id", job.id);
+    .insert({
+      household_id: householdId,
+      kind: "pdf-extract",
+      payload: { storage_path: path, instructions, filename: file.name },
+    })
+    .select("id")
+    .single();
+  if (jobError) return { error: jobError.message };
 
   const { status, body } = await callWorker({ task: "pdf-extract", jobId: job.id });
   if (status === 501) return { error: AI_OFF };

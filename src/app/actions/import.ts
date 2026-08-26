@@ -78,17 +78,21 @@ export async function runImport(_prev: ImportResult, form: FormData): Promise<Im
   let aiNote: string | null = null;
   let tokens: { input: number; output: number } | null = null;
 
-  // The model refines the guess; it never replaces the check that follows.
-  try {
-    const guess = await guessColumnsWithAi(shape.headers, map, instructions);
-    if (guess) {
-      map = guess.map;
-      aiNote = guess.note;
-      tokens = guess.tokens;
+  // The model is the fallback, not the default: the deterministic guesser
+  // knows every Czech bank's headings and costs nothing. Only a file it
+  // cannot read (no date, no amount) is worth eight model-seconds — which
+  // also keeps the common path safely inside Netlify's function budget.
+  if (validateColumnMap(map).length > 0) {
+    try {
+      const guess = await guessColumnsWithAi(shape.headers, map, instructions);
+      if (guess) {
+        map = guess.map;
+        aiNote = guess.note;
+        tokens = guess.tokens;
+      }
+    } catch (error) {
+      console.warn("[import] AI mapping skipped:", error);
     }
-  } catch (error) {
-    // A model that is down is not a reason not to import a file.
-    console.warn("[import] AI mapping skipped:", error);
   }
 
   const problems = validateColumnMap(map);
