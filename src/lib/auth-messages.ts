@@ -36,6 +36,15 @@ export function czechAuthError(message: string): string {
   if (text.includes("rate limit") || text.includes("too many")) {
     return "Moc pokusů po sobě. Dej tomu chvilku.";
   }
+  // SMTP odmítl zásilku. Pro člověka u formuláře to není jeho chyba a nemá
+  // co opravovat — smysl dává jen říct, že to není o něm, a nabídnout cestu,
+  // která na e-mailu nezávisí.
+  if (text.includes("error sending") || text.includes("smtp") || text.includes("mailer")) {
+    return (
+      "Účet se založit nepovedlo — nejde odeslat potvrzovací e-mail. " +
+      "Není to tvoje chyba, je to nastavení odesílatele. Zkus to za chvíli znovu."
+    );
+  }
   if (text.includes("same password")) return "Nové heslo musí být jiné než to staré.";
   if (text.includes("signups not allowed") || text.includes("signup is disabled")) {
     return "Registrace je zavřená. Napiš tomu, kdo účet spravuje.";
