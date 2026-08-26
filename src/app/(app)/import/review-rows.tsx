@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { confirmRow, discardRow } from "@/app/actions/import";
+import { confirmRow, confirmRows, discardRow } from "@/app/actions/import";
 import { setFlag } from "@/app/actions/transactions";
 import { Money } from "@/components/money";
 import { useToast } from "@/components/toast";
@@ -33,6 +33,19 @@ export function ReviewRows({ rows }: { rows: ReviewRow[] }) {
     return <p className="empty">Vyřízeno — nic tu nezůstalo. 🌱</p>;
   }
 
+  function approveAll() {
+    startBusy(async () => {
+      const ids = left.map((row) => row.id);
+      const result = await confirmRows(ids);
+      if (result.error) {
+        toast.show(result.error, "danger");
+        return;
+      }
+      setDone((current) => new Set([...current, ...ids]));
+      toast.show(`Schváleno ${result.confirmed} plateb.`);
+    });
+  }
+
   function resolve(row: ReviewRow, work: () => Promise<unknown>, message: string) {
     startBusy(async () => {
       await work();
@@ -42,7 +55,17 @@ export function ReviewRows({ rows }: { rows: ReviewRow[] }) {
   }
 
   return (
-    <ul className="review">
+    <>
+      <div className="review-head">
+        <button type="button" className="btn btn-primary btn-small" disabled={busy} onClick={approveAll}>
+          Schválit všechny ({left.length})
+        </button>
+        <p className="quiet-note" style={{ margin: 0 }}>
+          Napřed zahoď nebo označ, co sem nepatří — zbytek pak projde jedním klikem.
+        </p>
+      </div>
+
+      <ul className="review">
       {left.map((row) => (
         <li key={row.id} className="review-row">
           <span className="review-main">
@@ -105,6 +128,7 @@ export function ReviewRows({ rows }: { rows: ReviewRow[] }) {
           </span>
         </li>
       ))}
-    </ul>
+      </ul>
+    </>
   );
 }

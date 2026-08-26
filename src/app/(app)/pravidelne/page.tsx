@@ -27,11 +27,11 @@ export default async function RecurringPage({
   if (!household) return null;
 
   const today = todayIso();
-  const months = await getMonthsWithData(household.id, today);
-  const month = resolveMonth(params.mesic, months, today);
+  const month = resolveMonth(params.mesic, today);
 
   const supabase = await createClient();
-  const [subscriptionRows, monthlyRows, yearlyRows, debtRows] = await Promise.all([
+  const [months, subscriptionRows, monthlyRows, yearlyRows, debtRows] = await Promise.all([
+    getMonthsWithData(household.id, today),
     getListRows(household.id, "subscriptions"),
     getListRows(household.id, "monthly"),
     getListRows(household.id, "yearly"),

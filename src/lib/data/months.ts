@@ -50,9 +50,14 @@ export const getMonthsWithData = cache(async (
  */
 export function resolveMonth(
   requested: string | string[] | undefined,
-  months: MonthOptions,
   today: string,
 ): IsoMonth {
-  if (typeof requested === "string" && months.all.includes(requested)) return requested;
+  // Format check only — validating against the month LIST would force the
+  // list to load before anything else, serialising two round trips that can
+  // run side by side. A well-formed month with no data renders as empty,
+  // which is also the correct answer.
+  if (typeof requested === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(requested)) {
+    return requested;
+  }
   return monthOf(today);
 }

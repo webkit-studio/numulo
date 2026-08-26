@@ -281,3 +281,32 @@ export async function commitPreparedRows(input: CommitInput): Promise<
 
   return { error: null, batchId: String(batch.id), summary };
 }
+
+/**
+ * "Schválit všechny" on the review tab.
+ *
+ * The flow this exists for: throw out the two rows that are wrong, then wave
+ * the remaining forty through at once. It takes the ids the person is looking
+ * at, never "everything in review" — a second batch waiting behind this one
+ * must not be approved by a button that was pressed about a different list.
+ */
+export async function confirmRows(ids: string[]): Promise<{ error: string | null; confirmed: number }> {
+  if (ids.length === 0) return { error: null, confirmed: 0 };
+
+  const supabase = await createClient();
+  let confirmed = 0;
+
+  for (let start = 0; start < ids.length; start += 200) {
+    const { data, error } = await supabase
+      .from("transactions")
+      .update({ status: "confirmed" })
+      .in("id", ids.slice(start, start + 200))
+      .eq("status", "review")
+      .select("id");
+    if (error) return { error: error.message, confirmed };
+    confirmed += data?.length ?? 0;
+  }
+
+  revalidatePath("/", "layout");
+  return { error: null, confirmed };
+}

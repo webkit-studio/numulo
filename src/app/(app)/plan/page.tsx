@@ -27,10 +27,10 @@ export default async function PlanPage({
   if (!household) return null;
 
   const today = todayIso();
-  const months = await getMonthsWithData(household.id, today);
-  const month = resolveMonth(params.mesic, months, today);
+  const month = resolveMonth(params.mesic, today);
 
-  const [snapshot, plannedRows] = await Promise.all([
+  const [months, snapshot, plannedRows] = await Promise.all([
+    getMonthsWithData(household.id, today),
     getMonthSnapshot(household, month, today),
     getListRows(household.id, "planned"),
   ]);

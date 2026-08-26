@@ -32,22 +32,23 @@ export const getSession = cache(async (): Promise<{
   householdCount: number;
 }> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) return { viewer: null, household: null, householdCount: 0 };
+  // Identity comes out of the JWT, verified locally by signature — the name
+  // is in user_metadata, put there at sign-up. The earlier getUser() +
+  // profiles pair cost two network round-trips on every single page render,
+  // to learn what the token already carries.
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims as
+    | { sub: string; email?: string; user_metadata?: { display_name?: string } }
+    | undefined;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", user.id)
-    .maybeSingle();
+  if (!claims?.sub) return { viewer: null, household: null, householdCount: 0 };
 
   const viewer: Viewer = {
-    id: user.id,
-    email: user.email ?? null,
-    displayName: profile?.display_name ?? user.email?.split("@")[0] ?? "Ty",
+    id: claims.sub,
+    email: claims.email ?? null,
+    displayName:
+      claims.user_metadata?.display_name?.trim() || claims.email?.split("@")[0] || "Ty",
   };
 
   // RLS already limits this to households the viewer belongs to, so there is

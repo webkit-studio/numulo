@@ -25,9 +25,9 @@ export default async function TransactionsPage({
   if (!household) return null;
 
   const today = todayIso();
-  const months = await getMonthsWithData(household.id, today);
-  const month = resolveMonth(params.mesic, months, today);
-  const [snapshot, members] = await Promise.all([
+  const month = resolveMonth(params.mesic, today);
+  const [months, snapshot, members] = await Promise.all([
+    getMonthsWithData(household.id, today),
     getMonthSnapshot(household, month, today),
     getMembers(household.id),
   ]);

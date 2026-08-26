@@ -4,7 +4,7 @@ import { Cashflow } from "@/components/charts/cashflow";
 import { Sparkline } from "@/components/charts/sparkline";
 import { Money } from "@/components/money";
 import { getSession } from "@/lib/data/household";
-import { getMonthsWithData, resolveMonth, todayIso } from "@/lib/data/months";
+import { resolveMonth, todayIso } from "@/lib/data/months";
 import { getTrends } from "@/lib/data/trends";
 
 export const metadata: Metadata = { title: "Vývoj" };
@@ -15,8 +15,7 @@ export default async function TrendsPage() {
   if (!household) return null;
 
   const today = todayIso();
-  const months = await getMonthsWithData(household.id, today);
-  const month = resolveMonth(undefined, months, today);
+  const month = resolveMonth(undefined, today);
   const trends = await getTrends(household, month);
 
   // Nothing to plot is not the same as a month that came out at zero. Drawing

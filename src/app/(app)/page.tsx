@@ -26,9 +26,11 @@ export default async function OverviewPage({
   if (!household) return null;
 
   const today = todayIso();
-  const months = await getMonthsWithData(household.id, today);
-  const month = resolveMonth(params.mesic, months, today);
-  const snapshot = await getMonthSnapshot(household, month, today);
+  const month = resolveMonth(params.mesic, today);
+  const [months, snapshot] = await Promise.all([
+    getMonthsWithData(household.id, today),
+    getMonthSnapshot(household, month, today),
+  ]);
 
   if (snapshot.isEmpty) {
     return <EmptyHousehold householdName={household.name} />;

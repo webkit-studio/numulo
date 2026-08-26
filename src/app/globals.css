@@ -1766,3 +1766,13 @@ button.envelope-action {
 }
 
 .dropzone-kind { display: block; margin-top: 4px; font-size: var(--text-2xs); color: var(--ink-3); font-family: var(--font-ui); }
+
+.review-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  padding-bottom: var(--s3);
+  margin-bottom: var(--s2);
+  border-bottom: 1px solid rgba(14, 62, 46, 0.08);
+}
