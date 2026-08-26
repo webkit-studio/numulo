@@ -1,10 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import {
   average,
-  cashOverTime,
   monthResult,
   percentAgainstAverage,
-  type CashPoint,
   type MonthResult,
 } from "@/lib/calc";
 import { addMonths, lastMonths, monthEnd, monthStart, type IsoMonth } from "@/lib/date";
@@ -42,12 +40,8 @@ export interface CategoryTrend {
 export interface Trends {
   months: IsoMonth[];
   cashflow: MonthResult[];
-  cash: CashPoint[];
-  /** The month whose cash first goes negative, if any. */
-  firstNegative: IsoMonth | null;
   trends: CategoryTrend[];
   averages: { name: string; color: string; mean: number }[];
-  cashToday: number;
 }
 
 const PAST = 2;
@@ -71,7 +65,6 @@ export async function getTrends(
     { data: monthlyRows },
     { data: yearlyRows },
     { data: plannedRows },
-    { data: sinceRows },
   ] = await Promise.all([
     supabase
       .from("transactions")
@@ -79,16 +72,11 @@ export async function getTrends(
       .eq("household_id", household.id)
       .gte("date", from)
       .lte("date", to),
-    supabase.from("categories").select("id, name, color, sort").eq("household_id", household.id).order("sort"),
+    supabase.from("categories").select("id, name, color, sort, parent_id").eq("household_id", household.id).order("sort"),
     supabase.from("subscriptions").select("amount, active").eq("household_id", household.id),
     supabase.from("recurring_monthly").select("amount, active").eq("household_id", household.id),
     supabase.from("recurring_yearly").select("name, amount, due_month, active").eq("household_id", household.id),
     supabase.from("planned_items").select("*").eq("household_id", household.id).eq("active", true),
-    supabase
-      .from("transactions")
-      .select("amount")
-      .eq("household_id", household.id)
-      .gt("date", household.initial_balance_date ?? "0001-01-01"),
   ]);
 
   const budget = Number(household.monthly_budget);
@@ -142,6 +130,10 @@ export async function getTrends(
       0,
     );
 
+  const monthlyTotal = (monthlyRows ?? [])
+    .filter((row) => row.active)
+    .reduce((sum, row) => sum + Number(row.amount), 0);
+
   /** Yearly premiums and one-off planned expenses — what a smooth month hides. */
   const extraordinaryFor = (month: IsoMonth) => {
     const monthNo = Number(month.slice(5, 7));
@@ -149,14 +141,15 @@ export async function getTrends(
       (sum, row) => (row.active && row.due_month === monthNo ? sum + Number(row.amount) : sum),
       0,
     );
-    const oneOff = (plannedRows ?? []).reduce(
+    const planned = (plannedRows ?? []).reduce(
       (sum, row) =>
-        row.direction === "expense" && row.interval === "once" && row.month === month
+        row.direction === "expense" &&
+        (row.interval === "monthly" || row.month === month)
           ? sum + Number(row.amount)
           : sum,
       0,
     );
-    return yearly + oneOff;
+    return yearly + planned;
   };
 
   const pastMonths = lastMonths(addMonths(currentMonth, -1), PAST).filter((month) =>
@@ -168,107 +161,87 @@ export async function getTrends(
 
   const cashflow: MonthResult[] = [
     ...pastMonths.map((month) =>
-      monthResult(
-        month,
-        income.get(month) ?? 0,
-        (expenses.get(month) ?? 0) + subscriptionTotal,
-        "actual",
-      ),
+      monthResult(month, income.get(month) ?? 0, expenses.get(month) ?? 0, "actual"),
     ),
   ];
 
-  // §4: říjnové výdaje = max(rozpočet − spoření, výdaje + plánované).
-  // The budget is the floor because a month that has barely started has barely
-  // spent anything, and drawing that as a windfall would be a lie.
-  const currentSpending = (expenses.get(currentMonth) ?? 0) + subscriptionTotal;
-  const currentPlanned = plannedFor(currentMonth, "expense");
+  /*
+   * Forecast income is NEVER the budget.
+   *
+   * An earlier version drew future months as "the budget arrives, the budget
+   * minus savings leaves" — which for a household with irregular income
+   * invents money out of thin air and paints every future month green. The
+   * only income a forecast may claim is income somebody actually planned
+   * (planned_items, direction income, that month). No planned income means
+   * the line goes down, in red — that is the entire point of looking at it.
+   *
+   * Forecast expenses are what is actually known to be coming: subscriptions,
+   * monthly recurring, yearly items due that month, planned expenses.
+   */
+  const knownOutgoings = (month: IsoMonth) =>
+    subscriptionTotal + monthlyTotal + extraordinaryFor(month);
+
+  const currentSpending = expenses.get(currentMonth) ?? 0;
   cashflow.push(
     monthResult(
       currentMonth,
-      budget,
-      Math.max(budget - savings, currentSpending + currentPlanned),
+      (income.get(currentMonth) ?? 0) + plannedFor(currentMonth, "income"),
+      Math.max(currentSpending, knownOutgoings(currentMonth)),
       "forecast",
     ),
   );
 
   for (const month of futureMonths) {
-    // Nothing is known about a month that has not happened, so the plan is the
-    // forecast: the budget comes in, the budget minus savings goes out, and
-    // whatever is separately planned for that month moves it.
     cashflow.push(
-      monthResult(
-        month,
-        budget + plannedFor(month, "income"),
-        budget - savings + plannedFor(month, "expense"),
-        "forecast",
-      ),
+      monthResult(month, plannedFor(month, "income"), knownOutgoings(month), "forecast"),
     );
   }
-
-  /* ── hotovost v čase ────────────────────────────────────────────────── */
-
-  const movement = (sinceRows ?? []).reduce((sum, row) => sum + Number(row.amount), 0);
-  const cashToday = Number(household.initial_balance) + movement;
-
-  // Past balances are pinned to today's figure and walked backwards through
-  // each month's actual result — the same anchor the reserve tile uses.
-  const pastCash: { month: IsoMonth; cash: number }[] = [];
-  let running = cashToday;
-  for (let index = cashflow.length - 1; index >= 0; index -= 1) {
-    const point = cashflow[index];
-    if (point.kind !== "actual") continue;
-    pastCash.unshift({ month: point.month, cash: running - point.result });
-    running -= point.result;
-  }
-
-  const cash = cashOverTime({
-    cashToday,
-    currentMonth,
-    past: pastCash,
-    future: futureMonths.map((month) => ({
-      month,
-      result: cashflow.find((point) => point.month === month)?.result ?? 0,
-      extraordinary: extraordinaryFor(month),
-    })),
-  });
 
   /* ── trendy a průměry ───────────────────────────────────────────────── */
 
   const known = history.filter((month) => monthsWithData.has(month));
 
-  const categories = (categoryRows ?? []).map((row) => {
-    const spend = byCategory.get(row.id as string);
-    const series = known.map((month) => spend?.get(month) ?? 0);
-    const mean = average(series);
-    const latest = series[series.length - 1] ?? 0;
-    return {
-      id: row.id as string,
-      name: row.name as string,
-      color: row.color as string,
-      series,
-      latest,
-      mean,
-      percent: percentAgainstAverage(latest, mean),
-    };
-  });
+  // Children roll into their parent: the trend of "Jídlo" is food including
+  // fastfood, the same way the envelope measures it.
+  const rows = categoryRows ?? [];
+  const parentOf = new Map(rows.map((row) => [row.id as string, (row.parent_id as string) ?? null]));
+  const rolled = new Map<string, Map<IsoMonth, number>>();
+  for (const [categoryId, series] of byCategory) {
+    const target = parentOf.get(categoryId) ?? categoryId;
+    const bucket = rolled.get(target) ?? new Map<IsoMonth, number>();
+    for (const [month, value] of series) bucket.set(month, (bucket.get(month) ?? 0) + value);
+    rolled.set(target, bucket);
+  }
 
-  const spendingCategories = categories.filter((category) => category.mean > 0);
+  const categories = rows
+    .filter((row) => !row.parent_id)
+    .map((row) => {
+      const spend = rolled.get(row.id as string);
+      const series = known.map((month) => spend?.get(month) ?? 0);
+      const mean = average(series);
+      const latest = series[series.length - 1] ?? 0;
+      return {
+        id: row.id as string,
+        name: row.name as string,
+        color: row.color as string,
+        series,
+        latest,
+        mean,
+        percent: percentAgainstAverage(latest, mean),
+      };
+    });
+
+  // Every category the household spends in — a trends screen that hand-picks
+  // four rows answers its own question, not the reader's.
+  const spendingCategories = categories
+    .filter((category) => category.mean > 0)
+    .sort((a, b) => b.mean - a.mean);
 
   return {
     months: known,
     cashflow,
-    cash,
-    firstNegative: cash.find((point) => point.belowZero)?.month ?? null,
-    // Four rows, the four the household actually spends in — and only once
-    // there are two months to draw a line between.
-    trends:
-      known.length < 2
-        ? []
-        : [...spendingCategories].sort((a, b) => b.mean - a.mean).slice(0, 4),
-    averages: [...spendingCategories]
-      .sort((a, b) => b.mean - a.mean)
-      .map(({ name, color, mean }) => ({ name, color, mean })),
-    cashToday,
+    trends: known.length < 2 ? [] : spendingCategories,
+    averages: spendingCategories.map(({ name, color, mean }) => ({ name, color, mean })),
   };
 }
 

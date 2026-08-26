@@ -4,7 +4,7 @@ import { AuthShell } from "@/components/auth-shell";
 import { getSession } from "@/lib/data/household";
 import { OnboardingForm } from "./onboarding-form";
 
-export const metadata: Metadata = { title: "Numulo — první krok" };
+export const metadata: Metadata = { title: "Začínáme" };
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage() {

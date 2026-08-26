@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { recordDebtPayment } from "@/app/actions/debts";
+import { matchDebtPayments, recordDebtPayment } from "@/app/actions/debts";
 import { CrudList, type CrudRow } from "@/components/crud-list";
 import { Money } from "@/components/money";
 import { useToast } from "@/components/toast";
@@ -37,19 +37,49 @@ export function DebtList({
   rows: DebtRow[];
   today: string;
 }) {
+  const toast = useToast();
+  const [matching, startMatching] = useTransition();
+
   const crudRows: CrudRow[] = rows.map((row) => ({
     id: row.id,
     values: row.values,
     view: <DebtBlock row={row} today={today} />,
   }));
 
+  const anyKey = rows.some((row) => row.vs || row.account);
+
   return (
-    <CrudList
-      listKey="debts"
-      householdId={householdId}
-      rows={crudRows}
-      empty="Žádné dluhy. 🌱"
-    />
+    <>
+      {rows.length > 0 ? (
+        <div className="debt-match">
+          <button
+            type="button"
+            className="btn"
+            disabled={matching || !anyKey}
+            onClick={() =>
+              startMatching(async () => {
+                const result = await matchDebtPayments();
+                toast.show(result.notice ?? result.error ?? "Hotovo", result.error ? "danger" : "success");
+              })
+            }
+          >
+            {matching ? "Hledám platby…" : "Spárovat platby z výpisů"}
+          </button>
+          <p className="quiet-note" style={{ margin: 0 }}>
+            {anyKey
+              ? "Projde transakce a podle VS nebo čísla účtu zapíše splátky. Import to dělá sám; tohle je pro jistotu."
+              : "Doplň dluhům VS nebo číslo účtu (tužkou) a splátky se budou párovat samy."}
+          </p>
+        </div>
+      ) : null}
+
+      <CrudList
+        listKey="debts"
+        householdId={householdId}
+        rows={crudRows}
+        empty="Žádné dluhy. 🌱"
+      />
+    </>
   );
 }
 
@@ -130,7 +160,7 @@ function DebtBlock({ row, today }: { row: DebtRow; today: string }) {
         </div>
       ) : row.remaining > 0 ? (
         <button type="button" className="btn-quiet debt-record" onClick={() => setOpen(true)}>
-          zaznamenat platbu
+          zapsat platbu ručně (hotovost)
         </button>
       ) : (
         <p className="debt-done">splaceno 🌱</p>

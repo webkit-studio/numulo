@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { AuthShell } from "@/components/auth-shell";
 import { LoginForm } from "./login-form";
 
-export const metadata: Metadata = { title: "Numulo — přihlášení" };
+export const metadata: Metadata = { title: "Přihlášení" };
 
 /** Only same-origin in-app paths, so `?dal=` cannot become an open redirect. */
 function safeNext(value: string | string[] | undefined): string {

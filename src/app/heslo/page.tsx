@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { AuthShell } from "@/components/auth-shell";
 import { ResetRequestForm } from "./reset-request-form";
 
-export const metadata: Metadata = { title: "Numulo — zapomenuté heslo" };
+export const metadata: Metadata = { title: "Obnova hesla" };
 
 export default function ForgottenPasswordPage() {
   return (

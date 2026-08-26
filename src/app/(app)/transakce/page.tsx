@@ -3,11 +3,13 @@ import { MonthPicker } from "@/components/month-picker";
 import { Money } from "@/components/money";
 import { TransactionFilters } from "./filters";
 import { EditableTransactions } from "./editable-transactions";
+import { AddRecord } from "./add-record";
+import { AutoCategorize } from "./auto-categorize";
 import { getMembers, getSession } from "@/lib/data/household";
 import { getMonthSnapshot } from "@/lib/data/month";
 import { getMonthsWithData, resolveMonth, todayIso } from "@/lib/data/months";
 
-export const metadata: Metadata = { title: "Numulo — transakce" };
+export const metadata: Metadata = { title: "Transakce" };
 export const dynamic = "force-dynamic";
 
 const one = (v: string | string[] | undefined) =>
@@ -36,12 +38,25 @@ export default async function TransactionsPage({
   const showBusiness = one(params.podnikani) === "1";
   const showTransfers = one(params.prevody) === "1";
 
+  const childToParent = new Map(
+    snapshot.categories.flatMap((c) => c.children.map((ch) => [ch.id, c.id] as const)),
+  );
+
+  const uncategorized = snapshot.transactions.filter(
+    (tx) => tx.amount < 0 && !tx.categoryId && !tx.isBusiness && !tx.isTransfer,
+  ).length;
+
   const visible = snapshot.transactions.filter((tx) => {
     if (search) {
       const haystack = `${tx.merchant ?? ""} ${tx.description ?? ""}`.toLowerCase();
       if (!haystack.includes(search)) return false;
     }
-    if (categoryId && tx.categoryId !== categoryId) return false;
+    if (categoryId) {
+      // The chip names a parent; a payment filed under its subcategory still
+      // belongs to it.
+      const parentOfTx = childToParent.get(tx.categoryId ?? "") ?? tx.categoryId;
+      if (parentOfTx !== categoryId) return false;
+    }
     if (ownerId && tx.ownerId !== ownerId) return false;
     // Business and transfers are out of every household total, so showing them
     // unasked would make this list disagree with every number on screen.
@@ -64,7 +79,17 @@ export default async function TransactionsPage({
             {visible.length} položek · utraceno <Money value={spent} tone="plain" />
           </p>
         </div>
-        <MonthPicker months={months.all} current={month} />
+        <div className="page-head-actions">
+          <AutoCategorize householdId={household.id} uncategorized={uncategorized} />
+          <AddRecord
+            householdId={household.id}
+            categories={snapshot.categories
+              .filter((c) => !c.parentId)
+              .map((c) => ({ id: c.id, name: c.name, color: c.color }))}
+            today={today}
+          />
+          <MonthPicker months={months.all} current={month} />
+        </div>
       </header>
 
       <TransactionFilters
@@ -81,7 +106,12 @@ export default async function TransactionsPage({
       <section className="card">
         <EditableTransactions
           transactions={visible}
-          categories={snapshot.categories.map((c) => ({ id: c.id, name: c.name, color: c.color }))}
+          categories={snapshot.categories.map((c) => ({
+            id: c.id,
+            name: c.name,
+            color: c.color,
+            children: c.children.map((ch) => ({ id: ch.id, name: ch.name })),
+          }))}
           members={members}
           today={today}
         />

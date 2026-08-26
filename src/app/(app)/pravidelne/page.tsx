@@ -14,7 +14,7 @@ import { estimatePayoff } from "@/lib/calc";
 import { lastMonths, monthStart, monthNameOnly } from "@/lib/date";
 import { formatCzk } from "@/lib/money";
 
-export const metadata: Metadata = { title: "Numulo — pravidelné" };
+export const metadata: Metadata = { title: "Pravidelné" };
 export const dynamic = "force-dynamic";
 
 export default async function RecurringPage({

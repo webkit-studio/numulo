@@ -33,9 +33,9 @@ export function Detected({
         {candidates.map((candidate) => (
           <li key={candidate.name}>
             <p className="detected-claim">
-              Vypadá to na předplatné — <b>{candidate.name}</b>{" "}
+              Opakuje se — <b>{candidate.name}</b>{" "}
               <b className="num">{formatCzk(candidate.amount)}</b>, {candidate.months.length}×
-              {candidate.day ? ` kolem ${candidate.day}.` : ""}. Přidat mezi předplatná?
+              {candidate.day ? ` kolem ${candidate.day}.` : ""}. Co to je?
             </p>
             <div className="detected-actions">
               <button
@@ -49,12 +49,32 @@ export function Detected({
                       candidate.name,
                       candidate.amount,
                       candidate.day,
+                      "subscription",
                     );
                     toast.show(result.notice ?? result.error ?? "", result.error ? "danger" : "success");
                   })
                 }
               >
-                Přidat
+                Je to předplatné
+              </button>
+              <button
+                type="button"
+                className="btn btn-small"
+                disabled={busy}
+                onClick={() =>
+                  startBusy(async () => {
+                    const result = await acceptDetected(
+                      householdId,
+                      candidate.name,
+                      candidate.amount,
+                      candidate.day,
+                      "monthly",
+                    );
+                    toast.show(result.notice ?? result.error ?? "", result.error ? "danger" : "success");
+                  })
+                }
+              >
+                Měsíční platba
               </button>
               <button
                 type="button"
@@ -67,7 +87,7 @@ export function Detected({
                   })
                 }
               >
-                Není předplatné
+                Nic pravidelného
               </button>
             </div>
           </li>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Money } from "@/components/money";
 import { Upload } from "./upload";
+import { PdfUpload } from "./pdf-upload";
 import { ReviewRows, type ReviewRow } from "./review-rows";
 import { EditableTransactions } from "../transakce/editable-transactions";
 import { createClient } from "@/lib/supabase/server";
@@ -10,7 +11,7 @@ import { todayIso } from "@/lib/data/months";
 import { shortDate } from "@/lib/date";
 import type { TransactionRow } from "@/lib/data/month";
 
-export const metadata: Metadata = { title: "Numulo — import" };
+export const metadata: Metadata = { title: "Import" };
 export const dynamic = "force-dynamic";
 
 type Tab = "pridano" | "duplicitni" | "schvaleni";
@@ -137,8 +138,19 @@ export default async function ImportPage({
 
       <div className="row">
         <section className="card grow-2">
-          <div className="card-head"><h2 className="card-title">Nový výpis</h2></div>
+          <div className="card-head">
+            <h2 className="card-title">Nový výpis — CSV</h2>
+            <span className="card-sub">rychlé a bez modelu; sloupce si výpis přečte sám</span>
+          </div>
           <Upload householdId={household.id} />
+        </section>
+
+        <section className="card grow-2">
+          <div className="card-head">
+            <h2 className="card-title">Nový výpis — PDF</h2>
+            <span className="card-sub">model přepíše transakce; do tabulek jdou stejnou cestou jako CSV</span>
+          </div>
+          <PdfUpload householdId={household.id} />
         </section>
 
         <section className="card grow-1">

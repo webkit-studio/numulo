@@ -7,7 +7,7 @@ import { todayIso } from "@/lib/data/months";
 import { estimatePayoff, summariseDebts } from "@/lib/calc";
 import { monthLabel, monthOf } from "@/lib/date";
 
-export const metadata: Metadata = { title: "Numulo — dluhy" };
+export const metadata: Metadata = { title: "Dluhy" };
 export const dynamic = "force-dynamic";
 
 export default async function DebtsPage() {

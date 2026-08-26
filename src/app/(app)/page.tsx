@@ -13,7 +13,7 @@ import { getMonthsWithData, resolveMonth, todayIso } from "@/lib/data/months";
 import { daysInMonth, shortDate } from "@/lib/date";
 import { formatCzk } from "@/lib/money";
 
-export const metadata: Metadata = { title: "Numulo — přehled" };
+export const metadata: Metadata = { title: "Přehled" };
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage({

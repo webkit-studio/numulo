@@ -7,7 +7,7 @@ const instrument = Instrument_Sans({ subsets: ["latin", "latin-ext"], weight: ["
 const plexMono = IBM_Plex_Mono({ subsets: ["latin", "latin-ext"], weight: ["400", "500", "600"], variable: "--font-plex-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Numulo",
+  title: { default: "Numulo", template: "Numulo | %s" },
   description: "Rodinné finance — můžu dnes utrácet, zvládáme měsíc, lezeme z toho ven?",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Numulo", statusBarStyle: "default" },

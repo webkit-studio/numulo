@@ -32,9 +32,15 @@ export interface CategorySpend {
   id: string;
   name: string;
   color: string;
+  parentId: string | null;
   monthlyLimit: number | null;
   inEnvelopes: boolean;
+  /** Own spend plus every child's — what the envelope measures. */
   spent: number;
+  /** Spend booked directly on this category, without children. */
+  ownSpent: number;
+  /** Children with any spend this month, largest first. */
+  children: { id: string; name: string; spent: number }[];
   envelope: Envelope;
 }
 
@@ -99,6 +105,7 @@ export async function getMonthSnapshot(
     { data: debtRows },
     { data: latestRow },
     { count: totalTransactions },
+    { data: sinceRows },
   ] = await Promise.all([
     supabase
       .from("transactions")
@@ -125,6 +132,11 @@ export async function getMonthSnapshot(
       .from("transactions")
       .select("id", { count: "exact", head: true })
       .eq("household_id", household.id),
+    supabase
+      .from("transactions")
+      .select("amount")
+      .eq("household_id", household.id)
+      .gt("date", household.initial_balance_date ?? "0001-01-01"),
   ]);
 
   const transactions: TransactionRow[] = (txRows ?? []).map((row) => {
@@ -162,6 +174,23 @@ export async function getMonthSnapshot(
 
   /* ── výdaje ─────────────────────────────────────────────────────────── */
 
+  // A subscription charged through the bank is already inside the transaction
+  // sum; adding its list price again would count it twice. What still belongs
+  // in spending is the subscription someone ticked off as paid whose charge
+  // the statement does not show — paid from another account, statement not
+  // imported yet.
+  const merchantsThisMonth = transactions
+    .filter((tx) => tx.amount < 0)
+    .map((tx) => (tx.merchant ?? tx.description ?? "").toLowerCase());
+
+  const paidSubsOffStatement = subscriptions.reduce((sum, row) => {
+    if (!paid.has(`subscription:${row.id}`)) return sum;
+    const name = String(row.name).trim().toLowerCase();
+    const inStatement =
+      name.length >= 3 && merchantsThisMonth.some((m) => m.includes(name));
+    return inStatement ? sum : sum + Number(row.amount);
+  }, 0);
+
   const spending = computeSpending({
     month,
     transactions: transactions.map((tx) => ({
@@ -170,7 +199,7 @@ export async function getMonthSnapshot(
       isBusiness: tx.isBusiness,
       isTransfer: tx.isTransfer,
     })),
-    subscriptions: subscriptionTotal,
+    subscriptions: paidSubsOffStatement,
   });
 
   // The fixed half is what the recurring tables already account for; what is
@@ -264,12 +293,6 @@ export async function getMonthSnapshot(
   const summary = summariseDebts(debts, month);
 
   // Cash is the opening balance plus everything that moved after its date.
-  const { data: sinceRows } = await supabase
-    .from("transactions")
-    .select("amount")
-    .eq("household_id", household.id)
-    .gt("date", household.initial_balance_date ?? "0001-01-01");
-
   const movement = (sinceRows ?? []).reduce((sum, row) => sum + Number(row.amount), 0);
   const reserve = computeReserve(
     Number(household.initial_balance) + movement,
@@ -296,19 +319,44 @@ export async function getMonthSnapshot(
     spentByCategory.set(tx.categoryId, (spentByCategory.get(tx.categoryId) ?? 0) - tx.amount);
   }
 
-  const categories: CategorySpend[] = (categoryRows ?? []).map((row) => {
-    const spent = spentByCategory.get(row.id as string) ?? 0;
-    const limit = row.monthly_limit === null ? null : Number(row.monthly_limit);
-    return {
-      id: row.id as string,
-      name: row.name as string,
-      color: row.color as string,
-      monthlyLimit: limit,
-      inEnvelopes: Boolean(row.in_envelopes),
-      spent,
-      envelope: computeEnvelope(spent, limit),
-    };
-  });
+  // Children roll up into their parent: the envelope and its limit live on
+  // the parent, the children are the breakdown underneath it.
+  const rows = categoryRows ?? [];
+  const childrenOf = new Map<string, typeof rows>();
+  for (const row of rows) {
+    if (!row.parent_id) continue;
+    const list = childrenOf.get(row.parent_id as string) ?? [];
+    list.push(row);
+    childrenOf.set(row.parent_id as string, list);
+  }
+
+  const categories: CategorySpend[] = rows
+    .filter((row) => !row.parent_id)
+    .map((row) => {
+      const ownSpent = spentByCategory.get(row.id as string) ?? 0;
+      const children = (childrenOf.get(row.id as string) ?? [])
+        .map((child) => ({
+          id: child.id as string,
+          name: child.name as string,
+          spent: spentByCategory.get(child.id as string) ?? 0,
+        }))
+        .sort((a, b) => b.spent - a.spent);
+
+      const spent = ownSpent + children.reduce((sum, child) => sum + child.spent, 0);
+      const limit = row.monthly_limit === null ? null : Number(row.monthly_limit);
+      return {
+        id: row.id as string,
+        name: row.name as string,
+        color: row.color as string,
+        parentId: null,
+        monthlyLimit: limit,
+        inEnvelopes: Boolean(row.in_envelopes),
+        spent,
+        ownSpent,
+        children,
+        envelope: computeEnvelope(spent, limit),
+      };
+    });
 
   const dailyMap = new Map<number, number>();
   for (const tx of transactions) {

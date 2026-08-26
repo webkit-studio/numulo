@@ -7,6 +7,7 @@ import { guessColumnMap, validateColumnMap } from "@/lib/import/mapping";
 import { classifyRows, prepareFile, summarise, type ClassifiedRow } from "@/lib/import/pipeline";
 import { sniffShape } from "@/lib/import/sniff";
 import { guessColumnsWithAi } from "@/lib/ai/columns";
+import { matchDebtPayments } from "./debts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -102,114 +103,30 @@ export async function runImport(_prev: ImportResult, form: FormData): Promise<Im
     return { error: "V souboru nejsou žádné čitelné řádky." };
   }
 
-  /* ── pravidla a duplicity ───────────────────────────────────────────── */
-
-  const supabase = await createClient();
-
-  const [{ data: ruleRows }, { data: categoryRows }, known] = await Promise.all([
-    supabase.from("rules").select("kind, pattern, target").eq("household_id", householdId),
-    supabase.from("categories").select("id, name").eq("household_id", householdId),
-    knownFingerprints(supabase, householdId, prepared.rows.map((row) => row.fingerprint)),
-  ]);
-
-  const categoriesById = new Map((categoryRows ?? []).map((row) => [String(row.id), String(row.name)]));
-
-  const categoryRules = new Map<string, { id: string; name: string }>();
-  const ownerRules = new Map<string, string>();
-  const transferPatterns: string[] = [];
-
-  for (const rule of ruleRows ?? []) {
-    const pattern = String(rule.pattern);
-    if (rule.kind === "merchant->category" && categoriesById.has(String(rule.target))) {
-      categoryRules.set(pattern, {
-        id: String(rule.target),
-        name: categoriesById.get(String(rule.target)) ?? "",
-      });
-    } else if (rule.kind === "pattern->owner") {
-      ownerRules.set(pattern, String(rule.target));
-    } else if (rule.kind === "pattern->transfer") {
-      transferPatterns.push(pattern);
-    }
-  }
-
-  const classified = classifyRows({
+  const commit = await commitPreparedRows({
+    householdId,
+    filename: file.name,
+    instructions,
     rows: prepared.rows,
-    known,
-    categoryRules,
-    transferPatterns,
-    ownerRules,
+    errors: prepared.errors,
+    aiTokens: tokens,
   });
+  if (commit.error !== null) return { error: commit.error };
+  const { batchId, summary } = commit;
 
-  const summary = summarise(classified, prepared.errors);
-
-  /* ── zápis ──────────────────────────────────────────────────────────── */
-
-  const { data: batch, error: batchError } = await supabase
-    .from("import_batches")
-    .insert({
-      household_id: householdId,
-      filename: file.name,
-      instructions_text: instructions || null,
-      stats_json: {
-        total: summary.total,
-        // What actually landed in the table — rows a rule could name plus
-        // rows waiting for a person. "added: ready" reported nothing on a
-        // first import, when no rule exists yet and every row needs a look.
-        added: summary.ready + summary.review,
-        ready: summary.ready,
-        duplicates: summary.duplicates,
-        review: summary.review,
-        errors: summary.errors,
-        months: summary.months,
-        ai: tokens,
-        // Kept so the "duplicitní" tab can show what each skipped row collided
-        // with. Capped: a re-import of a whole year would otherwise store a
-        // few thousand hashes nobody will ever open.
-        duplicateFingerprints: classified
-          .filter((row) => row.verdict === "duplicate")
-          .slice(0, 200)
-          .map((row) => row.fingerprint),
-      },
-    })
-    .select("id")
-    .single();
-
-  if (batchError) return { error: batchError.message };
-
-  const insertable = classified.filter((row) => row.verdict !== "duplicate");
-  const payload = insertable.map((row: ClassifiedRow) => ({
-    household_id: householdId,
-    fingerprint: row.fingerprint,
-    date: row.date,
-    amount: row.amount,
-    currency: row.currency || "CZK",
-    merchant: row.merchant || null,
-    description: row.description || null,
-    category_id: row.categoryId,
-    owner_id: row.ownerId,
-    is_transfer: row.isTransfer,
-    is_business: false,
-    source: "import",
-    // A row a rule could not name is a row a person should see.
-    status: row.verdict === "review" ? "review" : "confirmed",
-    import_batch_id: batch.id,
-  }));
-
-  for (let start = 0; start < payload.length; start += 500) {
-    const { error } = await supabase
-      .from("transactions")
-      .upsert(payload.slice(start, start + 500), {
-        onConflict: "household_id,fingerprint",
-        ignoreDuplicates: true,
-      });
-    if (error) return { error: error.message };
+  // Payments that belong to a debt record themselves — that is what the VS
+  // and account columns were stored for.
+  try {
+    await matchDebtPayments();
+  } catch (error) {
+    console.warn("[import] debt matching skipped:", error);
   }
 
   revalidatePath("/", "layout");
 
   return {
     error: null,
-    batchId: String(batch.id),
+    batchId,
     filename: file.name,
     added: summary.ready,
     duplicates: summary.duplicates,
@@ -237,4 +154,126 @@ export async function confirmRow(id: string): Promise<{ error: string | null }> 
 
   revalidatePath("/", "layout");
   return { error: null };
+}
+
+/**
+ * The single door into the transactions table for whole statements.
+ *
+ * CSV rows arrive here from the parser; PDF rows arrive here after the model
+ * transcribed them. From this point the treatment is identical — the same
+ * rules, the same fingerprint dedup, the same review status — so the answer
+ * to "why did this row import differently" can never be "because it came
+ * from a PDF".
+ */
+export interface CommitInput {
+  householdId: string;
+  filename: string;
+  instructions: string;
+  rows: import("@/lib/import/pipeline").PreparedRow[];
+  errors: import("@/lib/import/mapping").MapRowError[];
+  aiTokens: { input: number; output: number } | null;
+}
+
+export async function commitPreparedRows(input: CommitInput): Promise<
+  | { error: string; batchId?: undefined; summary?: undefined }
+  | { error: null; batchId: string; summary: ReturnType<typeof summarise> }
+> {
+  const supabase = await createClient();
+
+  const [{ data: ruleRows }, { data: categoryRows }, known] = await Promise.all([
+    supabase.from("rules").select("kind, pattern, target").eq("household_id", input.householdId),
+    supabase.from("categories").select("id, name").eq("household_id", input.householdId),
+    knownFingerprints(supabase, input.householdId, input.rows.map((row) => row.fingerprint)),
+  ]);
+
+  const categoriesById = new Map((categoryRows ?? []).map((row) => [String(row.id), String(row.name)]));
+
+  const categoryRules = new Map<string, { id: string; name: string }>();
+  const ownerRules = new Map<string, string>();
+  const transferPatterns: string[] = [];
+
+  for (const rule of ruleRows ?? []) {
+    const pattern = String(rule.pattern);
+    if (rule.kind === "merchant->category" && categoriesById.has(String(rule.target))) {
+      categoryRules.set(pattern, {
+        id: String(rule.target),
+        name: categoriesById.get(String(rule.target)) ?? "",
+      });
+    } else if (rule.kind === "pattern->owner") {
+      ownerRules.set(pattern, String(rule.target));
+    } else if (rule.kind === "pattern->transfer") {
+      transferPatterns.push(pattern);
+    }
+  }
+
+  const classified = classifyRows({
+    rows: input.rows,
+    known,
+    categoryRules,
+    transferPatterns,
+    ownerRules,
+  });
+
+  const summary = summarise(classified, input.errors);
+
+  const { data: batch, error: batchError } = await supabase
+    .from("import_batches")
+    .insert({
+      household_id: input.householdId,
+      filename: input.filename,
+      instructions_text: input.instructions || null,
+      stats_json: {
+        total: summary.total,
+        // What actually landed in the table — rows a rule could name plus
+        // rows waiting for a person.
+        added: summary.ready + summary.review,
+        ready: summary.ready,
+        duplicates: summary.duplicates,
+        review: summary.review,
+        errors: summary.errors,
+        months: summary.months,
+        ai: input.aiTokens,
+        duplicateFingerprints: classified
+          .filter((row) => row.verdict === "duplicate")
+          .slice(0, 200)
+          .map((row) => row.fingerprint),
+      },
+    })
+    .select("id")
+    .single();
+
+  if (batchError) return { error: batchError.message };
+
+  const insertable = classified.filter((row) => row.verdict !== "duplicate");
+  const payload = insertable.map((row: ClassifiedRow) => ({
+    household_id: input.householdId,
+    fingerprint: row.fingerprint,
+    date: row.date,
+    amount: row.amount,
+    currency: row.currency || "CZK",
+    merchant: row.merchant || null,
+    description: row.description || null,
+    vs: row.vs || null,
+    counter_account: row.counterAccount || null,
+    category_id: row.categoryId,
+    owner_id: row.ownerId,
+    is_transfer: row.isTransfer,
+    is_business: false,
+    source: "import",
+    // A row a rule could not name is a row a person should see.
+    status: row.verdict === "review" ? "review" : "confirmed",
+    import_batch_id: batch.id,
+  }));
+
+  for (let start = 0; start < payload.length; start += 500) {
+    const { error } = await supabase
+      .from("transactions")
+      .upsert(payload.slice(start, start + 500), {
+        onConflict: "household_id,fingerprint",
+        ignoreDuplicates: true,
+      });
+    if (error) return { error: error.message };
+  }
+
+  return { error: null, batchId: String(batch.id), summary };
 }

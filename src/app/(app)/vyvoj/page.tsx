@@ -1,15 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Cashflow } from "@/components/charts/cashflow";
-import { CashCurve } from "@/components/charts/cash-curve";
 import { Sparkline } from "@/components/charts/sparkline";
 import { Money } from "@/components/money";
 import { getSession } from "@/lib/data/household";
 import { getMonthsWithData, resolveMonth, todayIso } from "@/lib/data/months";
 import { getTrends } from "@/lib/data/trends";
-import { monthNameOnly } from "@/lib/date";
 
-export const metadata: Metadata = { title: "Numulo — vývoj" };
+export const metadata: Metadata = { title: "Vývoj" };
 export const dynamic = "force-dynamic";
 
 export default async function TrendsPage() {
@@ -67,22 +65,6 @@ export default async function TrendsPage() {
           <span className="card-sub">kolik měsíc vydělal — příjmy minus výdaje</span>
         </div>
         <Cashflow points={trends.cashflow} />
-      </section>
-
-      {/* ── Hotovost v čase ─────────────────────────────────────────── */}
-      <section className="card">
-        <div className="card-head">
-          <h2 className="card-title">Hotovost v čase</h2>
-          <span className="card-sub">kolik je na účtech</span>
-        </div>
-
-        {trends.firstNegative ? (
-          <p className="chart-warning">
-            v {monthNameOnly(trends.firstNegative)} hrozí, že hotovost nevyjde
-          </p>
-        ) : null}
-
-        <CashCurve points={trends.cash} cashToday={trends.cashToday} />
       </section>
 
       {/* ── Trendy kategorií ────────────────────────────────────────── */}

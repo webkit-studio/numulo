@@ -106,3 +106,17 @@ export async function getMembers(householdId: string): Promise<Member[]> {
     };
   });
 }
+
+/** Top-level categories for pickers — cached per request like the session. */
+export const getCategoryChips = cache(async (householdId: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("categories")
+    .select("id, name, color, parent_id")
+    .eq("household_id", householdId)
+    .order("sort");
+
+  return (data ?? [])
+    .filter((row) => !row.parent_id)
+    .map((row) => ({ id: String(row.id), name: String(row.name), color: String(row.color) }));
+});

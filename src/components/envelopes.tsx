@@ -50,6 +50,16 @@ export function Envelopes({ categories }: { categories: CategorySpend[] }) {
               )}
             </div>
 
+            {category.children.some((child) => child.spent > 0) ? (
+              <p className="envelope-children">
+                {category.children.filter((child) => child.spent > 0).map((child, index) => (
+                  <span key={child.id}>
+                    {index > 0 ? " · " : "z toho: "}
+                    {child.name} <Money value={child.spent} tone="plain" />
+                  </span>
+                ))}
+              </p>
+            ) : null}
             {envelope.limit === null ? (
               <p className="envelope-note">
                 utraceno <Money value={category.spent} tone="plain" />

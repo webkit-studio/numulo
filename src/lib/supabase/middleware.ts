@@ -6,9 +6,12 @@ import { supabaseKey, supabaseUrl } from "./config";
 /**
  * Refreshes the auth session on every request and decides who may pass.
  *
- * getUser() is used rather than getSession(): it verifies the token against
- * Supabase instead of trusting whatever the cookie claims, which is the
- * difference between a gate and a suggestion.
+ * getClaims() verifies the JWT's signature against the project's public keys
+ * (fetched once and cached), so the check is cryptographic *and* local.
+ * The earlier getUser() asked Supabase over the network on every single
+ * navigation — that round-trip was most of why clicking around felt slow.
+ * Row-level security still authorises every actual read and write; this
+ * gate only decides who gets redirected to the login screen.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -30,9 +33,8 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ? { id: String(data.claims.sub) } : null;
 
   return { response, user };
 }

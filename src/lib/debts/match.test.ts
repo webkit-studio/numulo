@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { matchDebtPayments } from "./match";
 
 const debt = {
-  id: 7,
+  id: "debt-7",
   creditor: "Táta",
   targetAccount: "2053627033/5500",
   vs: "202605",
@@ -10,7 +10,7 @@ const debt = {
 };
 
 const tx = (over: Partial<Parameters<typeof matchDebtPayments>[0][number]> = {}) => ({
-  id: 1,
+  id: "tx-1",
   date: "2026-05-14",
   amount: -500000,
   merchant: "SPLÁTKA DLUHU",
@@ -21,7 +21,7 @@ const tx = (over: Partial<Parameters<typeof matchDebtPayments>[0][number]> = {})
 describe("matchDebtPayments", () => {
   it("matches on the variable symbol", () => {
     const [match] = matchDebtPayments([tx()], [debt]);
-    expect(match).toMatchObject({ debtId: 7, amount: 500000, reason: "vs" });
+    expect(match).toMatchObject({ debtId: "debt-7", amount: 500000, reason: "vs" });
   });
 
   it("matches on the account number regardless of how it is punctuated", () => {
@@ -29,7 +29,7 @@ describe("matchDebtPayments", () => {
       [tx({ description: "Platba na 2053627033 / 5500" })],
       [debt],
     );
-    expect(match).toMatchObject({ debtId: 7, reason: "ucet" });
+    expect(match).toMatchObject({ debtId: "debt-7", reason: "ucet" });
   });
 
   it("ignores incoming money", () => {
@@ -56,7 +56,7 @@ describe("matchDebtPayments", () => {
   });
 
   it("credits each payment to at most one debt", () => {
-    const other = { ...debt, id: 9, vs: "202605", targetAccount: null };
+    const other = { ...debt, id: "debt-9", vs: "202605", targetAccount: null };
     const matches = matchDebtPayments([tx()], [debt, other]);
     expect(matches).toHaveLength(1);
   });

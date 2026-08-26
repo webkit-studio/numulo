@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { monthOf, type IsoMonth } from "@/lib/date";
 
@@ -20,35 +21,32 @@ export interface MonthOptions {
   newestWithData: IsoMonth | null;
 }
 
-export async function getMonthsWithData(
+export const getMonthsWithData = cache(async (
   householdId: string,
   today: string,
-): Promise<MonthOptions> {
+): Promise<MonthOptions> => {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("transactions")
-    .select("date")
-    .eq("household_id", householdId)
-    .order("date", { ascending: false });
+  // One row instead of one row per transaction — the function is SECURITY
+  // INVOKER, so RLS still answers who may ask.
+  const { data } = await supabase.rpc("months_with_data", { p_household: householdId });
 
-  const withData = [...new Set((data ?? []).map((row) => monthOf(row.date as string)))]
-    .sort()
-    .reverse();
+  const withData = ((data ?? []) as IsoMonth[]).slice().sort().reverse();
 
   // The current month is always offered even before anything lands in it,
   // otherwise the picker disappears on the 1st of the month.
   const all = [...new Set([monthOf(today), ...withData])].sort().reverse();
 
   return { all, newestWithData: withData[0] ?? null };
-}
+});
 
 /**
- * Which month to show.
+ * Which month to show: the current one, always.
  *
- * Defaults to the newest month that has data rather than to today. Opening on
- * an empty current month shows a screen full of zeroes that look like a
- * household which stopped spending, when really the statement simply has not
- * been imported yet.
+ * An earlier version defaulted to the newest month *with data*, which read as
+ * helpful until it opened July on the 26th of August. The question a person
+ * brings to a budget is "how are we doing NOW" — a stale month answers a
+ * question nobody asked, and the freshness note under the heading already
+ * says when the statement ends.
  */
 export function resolveMonth(
   requested: string | string[] | undefined,
@@ -56,5 +54,5 @@ export function resolveMonth(
   today: string,
 ): IsoMonth {
   if (typeof requested === "string" && months.all.includes(requested)) return requested;
-  return months.newestWithData ?? monthOf(today);
+  return monthOf(today);
 }

@@ -5,7 +5,7 @@ import { JoinCode } from "./join-code";
 import { ChangePassword } from "./change-password";
 import { halereToCzk } from "@/lib/money";
 
-export const metadata: Metadata = { title: "Numulo — nastavení účtu" };
+export const metadata: Metadata = { title: "Nastavení účtu" };
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {

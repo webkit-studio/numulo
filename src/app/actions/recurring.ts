@@ -65,33 +65,71 @@ export async function setSubscriptionSimulated(
 }
 
 /**
- * Accepting or dismissing a detected subscription.
+ * Answering the detection card. Every answer is stored, not forgotten.
  *
- * A dismissal is stored, not forgotten: without it the same three charges
- * would be re-detected on every page load and the household would be asked
- * about NVIDIA forever. It goes in `rules` next to the category rules, because
- * it is the same kind of thing — a decision about a merchant, made once.
+ * A recurring charge is either a subscription (Netflix) or a monthly payment
+ * (plyn) — arithmetic cannot tell those apart, only a person can, so the card
+ * offers both. And whichever way it goes, a rule records that this merchant
+ * has been decided: without it the same three charges would be re-detected on
+ * every page load. That includes acceptance — the person may rename the item
+ * afterwards, and a rename must not resurrect the question.
  */
+async function rememberDecided(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  householdId: string,
+  merchant: string,
+): Promise<void> {
+  await supabase.from("rules").upsert(
+    {
+      household_id: householdId,
+      kind: "merchant->not_subscription",
+      pattern: merchant.trim().toLowerCase(),
+      target: "handled",
+      created_from: "auto-detekce",
+    },
+    { onConflict: "household_id,kind,pattern" },
+  );
+}
+
 export async function acceptDetected(
   householdId: string,
   name: string,
   amount: number,
   day: number | null,
+  as: "subscription" | "monthly",
 ): Promise<{ error: string | null; notice?: string }> {
   const supabase = await createClient();
-  const { error } = await supabase.from("subscriptions").insert({
-    household_id: householdId,
-    name,
-    amount,
-    day,
-    active: true,
-    status: "confirmed",
-  });
+
+  const { error } =
+    as === "subscription"
+      ? await supabase.from("subscriptions").insert({
+          household_id: householdId,
+          name,
+          amount,
+          day,
+          active: true,
+          status: "confirmed",
+        })
+      : await supabase.from("recurring_monthly").insert({
+          household_id: householdId,
+          name,
+          amount,
+          day,
+          active: true,
+        });
 
   if (error) return { error: error.message };
 
+  await rememberDecided(supabase, householdId, name);
+
   revalidatePath("/", "layout");
-  return { error: null, notice: `Předplatné přidáno: ${name}` };
+  return {
+    error: null,
+    notice:
+      as === "subscription"
+        ? `Předplatné přidáno: ${name}`
+        : `Měsíční platba přidána: ${name}`,
+  };
 }
 
 export async function dismissDetected(
@@ -99,16 +137,7 @@ export async function dismissDetected(
   merchant: string,
 ): Promise<{ error: string | null; notice?: string }> {
   const supabase = await createClient();
-  const { error } = await supabase.from("rules").insert({
-    household_id: householdId,
-    kind: "merchant->not_subscription",
-    pattern: merchant.trim().toLowerCase(),
-    target: "ignore",
-    created_from: "auto-detekce",
-  });
-
-  if (error) return { error: error.message };
-
+  await rememberDecided(supabase, householdId, merchant);
   revalidatePath("/", "layout");
   return { error: null, notice: `${merchant} — nebudeme se ptát znovu` };
 }

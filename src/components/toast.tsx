@@ -2,13 +2,22 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
+interface ToastAction {
+  label: string;
+  run: () => void | Promise<void>;
+}
+
 interface Toast {
   id: number;
   text: string;
   tone: "info" | "success" | "danger";
+  /** One optional way back — "vrátit zpět" on a destructive-feeling change. */
+  action?: ToastAction;
 }
 
-const ToastContext = createContext<{ show: (text: string, tone?: Toast["tone"]) => void }>({
+const ToastContext = createContext<{
+  show: (text: string, tone?: Toast["tone"], action?: ToastAction) => void;
+}>({
   show: () => {},
 });
 
@@ -20,9 +29,12 @@ let nextId = 1;
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const show = useCallback((text: string, tone: Toast["tone"] = "success") => {
-    setToasts((current) => [...current, { id: nextId++, text, tone }]);
-  }, []);
+  const show = useCallback(
+    (text: string, tone: Toast["tone"] = "success", action?: ToastAction) => {
+      setToasts((current) => [...current, { id: nextId++, text, tone, action }]);
+    },
+    [],
+  );
 
   return (
     <ToastContext.Provider value={{ show }}>
@@ -42,9 +54,26 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 function ToastPill({ toast, onDone }: { toast: Toast; onDone: () => void }) {
   useEffect(() => {
-    const timer = setTimeout(onDone, 2800);
+    // A pill with a way back stays long enough to take it.
+    const timer = setTimeout(onDone, toast.action ? 6000 : 2800);
     return () => clearTimeout(timer);
-  }, [onDone]);
+  }, [onDone, toast.action]);
 
-  return <div className={`toast fade toast-${toast.tone}`}>{toast.text}</div>;
+  return (
+    <div className={`toast fade toast-${toast.tone}`}>
+      {toast.text}
+      {toast.action ? (
+        <button
+          type="button"
+          className="toast-action"
+          onClick={() => {
+            void toast.action?.run();
+            onDone();
+          }}
+        >
+          {toast.action.label}
+        </button>
+      ) : null}
+    </div>
+  );
 }

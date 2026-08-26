@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AuthShell } from "@/components/auth-shell";
 import { NewPasswordForm } from "./new-password-form";
 
-export const metadata: Metadata = { title: "Numulo — nové heslo" };
+export const metadata: Metadata = { title: "Nové heslo" };
 
 /**
  * Reached only through the e-mailed link, which the auth callback has already

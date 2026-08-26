@@ -12,6 +12,7 @@ interface Category {
   id: string;
   name: string;
   color: string;
+  children?: { id: string; name: string }[];
 }
 
 /**
@@ -55,7 +56,8 @@ export function EditableTransactions({
     const result = await setCategory(tx.id, categoryId);
     setBusy(null);
 
-    const name = categories.find((c) => c.id === categoryId)?.name ?? "bez kategorie";
+    const flat = categories.flatMap((c) => [c, ...(c.children ?? []).map((ch) => ({ ...ch, color: "" }))]);
+    const name = flat.find((c) => c.id === categoryId)?.name ?? "bez kategorie";
     toast.show(
       result.moved > 0
         ? `Zapamatuji si pravidlo: ${result.merchant} → ${name} · srovnáno ${result.moved} dalších`
@@ -70,10 +72,16 @@ export function EditableTransactions({
     await setFlag(tx.id, flag, next);
     setBusy(null);
 
+    // Marking a row hides it from the default view on the next render, so a
+    // slip would otherwise look like a deleted payment. The toast carries the
+    // way back for as long as it is on screen.
+    const undo = { label: "vrátit zpět", run: () => setFlag(tx.id, flag, !next) };
     toast.show(
       flag === "is_business"
         ? next ? "Označeno jako podnikání — mimo součty domácnosti" : "Zpět do domácnosti"
         : next ? "Označeno jako převod — mimo všechny metriky" : "Už to není převod",
+      "success",
+      next ? undo : undefined,
     );
     startTransition(() => {});
   }
@@ -125,9 +133,20 @@ export function EditableTransactions({
                             }
                           >
                             <option value="">bez kategorie</option>
-                            {categories.map((category) => (
-                              <option key={category.id} value={category.id}>{category.name}</option>
-                            ))}
+                            {categories.map((category) =>
+                              category.children && category.children.length > 0 ? (
+                                <optgroup key={category.id} label={category.name}>
+                                  <option value={category.id}>{category.name}</option>
+                                  {category.children.map((child) => (
+                                    <option key={child.id} value={child.id}>
+                                      {category.name} › {child.name}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              ) : (
+                                <option key={category.id} value={category.id}>{category.name}</option>
+                              ),
+                            )}
                           </select>
                         </span>
 

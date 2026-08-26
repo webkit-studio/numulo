@@ -1,14 +1,17 @@
 export interface MatchableTransaction {
-  id: number;
+  id: string;
   date: string;
   /** Negative for money leaving the account. */
   amount: number;
   merchant: string | null;
   description: string | null;
+  /** Structured fields when the import had them; the text is the fallback. */
+  vs?: string | null;
+  counterAccount?: string | null;
 }
 
 export interface MatchableDebt {
-  id: number;
+  id: string;
   creditor: string;
   targetAccount: string | null;
   vs: string | null;
@@ -16,8 +19,8 @@ export interface MatchableDebt {
 }
 
 export interface DebtMatch {
-  transactionId: number;
-  debtId: number;
+  transactionId: string;
+  debtId: string;
   amount: number;
   date: string;
   /** Which field made the match — shown so a wrong guess can be spotted. */
@@ -58,19 +61,23 @@ export function matchDebtPayments(
 
     const haystack = `${transaction.merchant ?? ""} ${transaction.description ?? ""}`;
     const haystackDigits = digits(haystack);
+    const txVs = digits(transaction.vs ?? "");
+    const txAccount = digits(transaction.counterAccount ?? "");
 
     for (const entry of keyed) {
       // VS first: it is the field a payer fills in deliberately, so when both
-      // could match it is the stronger signal.
+      // could match it is the stronger signal. The structured column wins;
+      // the free-text scan is for statements that only had a description.
       const byVs =
         entry.vs !== "" &&
         entry.vs.length >= 4 &&
-        new RegExp(`(?:VS|v\\.?s\\.?)\\s*:?\\s*0*${entry.vs}\\b`, "i").test(haystack);
+        (txVs === entry.vs ||
+          new RegExp(`(?:VS|v\\.?s\\.?)\\s*:?\\s*0*${entry.vs}\\b`, "i").test(haystack));
 
       const byAccount =
         entry.account !== "" &&
         entry.account.length >= 6 &&
-        haystackDigits.includes(entry.account);
+        (txAccount.includes(entry.account) || haystackDigits.includes(entry.account));
 
       if (!byVs && !byAccount) continue;
 

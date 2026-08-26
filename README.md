@@ -16,7 +16,7 @@ v Supabase.
 | **Přehled** | Můžu dneska utrácet a jak na tom jsme? |
 | **Plán** | Jak nastavíme a zvládáme tenhle měsíc? |
 | **Pravidelné** | Co jede samo a je to zaplacené? |
-| **Vývoj** | Jak se to vyvíjí a kam to směřuje? |
+| **Vývoj** | Jak se to vyvíjí — a co se stane, když nepřijde žádný klient? |
 | **Dluhy** | Co dlužíme a kdy budeme čistí? |
 | **Transakce** | Najdu a opravím konkrétní platbu. |
 | **Import** | Dostanu výpis z banky dovnitř. |
@@ -39,19 +39,31 @@ ne podmínka v aplikačním kódu.
 
 ## Import
 
-Přetáhneš CSV z jakékoli banky. Numulo si přečte kódování a oddělovač,
-odvodí sloupce, otiskne řádky a roztřídí je:
+Bere **CSV i PDF**. CSV se parsuje deterministicky (kódování, oddělovač
+a sloupce si výpis přečte sám); PDF přepíše model a řádky pak jdou do
+tabulek **stejnou cestou jako CSV** — stejný otisk, stejná pravidla:
 
 - **Přidáno** — sedělo pravidlo, kategorie je nastavená
 - **Duplicitní** — stejný otisk už v databázi je, neuloží se
 - **Ke schválení** — takového obchodníka nikdo ještě neviděl
 
-Přeřazení kategorie se zapamatuje jako pravidlo pro obchodníka, takže
-příští výpis se roztřídí sám.
+Po importu se platby s VS nebo číslem účtu samy spárují na dluhy.
 
-Volitelně pomůže s mapováním sloupců model (Claude Haiku 4.5). Dostane
-**jen nadpisy sloupců** a poznámku od uživatele — žádnou platbu. Bez
-`ANTHROPIC_API_KEY` import funguje dál, jen bez té pomoci.
+## AI
+
+Model dělá tři věci a všechny běží v Supabase Edge Function `ai-worker`,
+kde jediné žije `ANTHROPIC_API_KEY`:
+
+1. **Mapování sloupců CSV** — vidí jen nadpisy, nikdy data (Haiku 4.5).
+2. **Přepis PDF výpisu** — vidí celý výpis, to jinak nejde (Sonnet 5).
+3. **Kategorizace** — vidí jen **názvy obchodníků**, žádné částky ani účty
+   (Haiku 4.5). Návrhy se ukládají jako pravidla `obchodník → kategorie`,
+   takže příští výpis se roztřídí bez modelu. Umí navrhnout podkategorii
+   (Jídlo › Fastfood) — obálky a trendy je sčítají do rodiče.
+
+Výstup modelu **nikdy nejde přímo do tabulek**: přistane jako JSON v
+`ai_jobs.result` a aplikace rozhodne, co z něj zapíše. Bez klíče všechno
+ostatní funguje dál; tlačítka to řeknou.
 
 ## Spuštění
 
@@ -61,11 +73,11 @@ cp .env.example .env.local   # a doplnit klíče ze Supabase
 npm run dev                  # :3000
 ```
 
-| proměnná | k čemu | povinná |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | adresa projektu | ano |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | veřejný klíč (RLS hlídá zbytek) | ano |
-| `ANTHROPIC_API_KEY` | pomoc s mapováním sloupců při importu | ne |
+| proměnná | kde | k čemu | povinná |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Netlify + `.env.local` | adresa projektu | ano |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Netlify + `.env.local` | veřejný klíč (RLS hlídá zbytek) | ano |
+| `ANTHROPIC_API_KEY` | **Supabase → Edge Functions → Secrets** | PDF import a kategorizace | ne |
 
 Když povinná proměnná chybí, aplikace to řekne jménem té proměnné —
 ne prázdnou pětistovkou.
@@ -86,7 +98,7 @@ vadný test.
 
 ## Databáze
 
-Schéma je v Supabase (migrace `numulo_*`). Šestnáct tabulek, na všech
+Schéma je v Supabase (migrace `numulo_*`). Sedmnáct tabulek, na všech
 zapnutá row-level security navázaná na členství v domácnosti. Jediné dvě
 cesty skrz tu zeď jsou `create_household()` a `join_household()`, a každá
 si kontroluje svoje.

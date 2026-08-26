@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Numulo — víc" };
+export const metadata: Metadata = { title: "Víc" };
 
 /**
  * The phone's fourth tab: everything the sidebar holds on a desktop.
@@ -28,7 +28,7 @@ const SECTIONS = [
     label: "Data",
     items: [
       { href: "/import", title: "Import", note: "výpis dovnitř — pohodlnější na počítači" },
-      { href: "/zapsat", title: "Zapsat výdaj", note: "hotovost, co ve výpisu nebude" },
+      { href: "/transakce", title: "Přidat záznam", note: "výdaj nebo příjem ručně — tlačítko + v Transakcích" },
     ],
   },
   {

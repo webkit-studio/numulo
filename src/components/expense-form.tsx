@@ -13,7 +13,8 @@ export interface ExpenseCategory {
 }
 
 /**
- * Zapsat výdaj — the cash payment that will never appear in a statement.
+ * One record by hand — the cash payment or incoming transfer that is not in
+ * any statement yet.
  *
  * Amount first, because that is what someone remembers on the way out of the
  * shop. Categories are chips rather than a dropdown: on a phone, one tap on a

@@ -26,7 +26,7 @@ export function QuickAdd({
       <button
         type="button"
         className="fab"
-        aria-label="Zapsat výdaj"
+        aria-label="Přidat záznam"
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
@@ -34,12 +34,12 @@ export function QuickAdd({
       </button>
 
       {open ? (
-        <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Zapsat výdaj">
+        <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Přidat záznam">
           {/* Tapping the dark area is the way out that needs no explaining. */}
           <button type="button" className="sheet-close-area" aria-hidden="true" onClick={() => setOpen(false)} />
           <div className="sheet fade">
             <div className="sheet-head">
-              <h2 className="card-title">Zapsat výdaj</h2>
+              <h2 className="card-title">Přidat záznam</h2>
               <button type="button" className="btn-quiet" onClick={() => setOpen(false)}>zavřít</button>
             </div>
             <ExpenseForm

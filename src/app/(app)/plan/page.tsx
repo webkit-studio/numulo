@@ -14,7 +14,7 @@ import { monthNameOnly } from "@/lib/date";
 import { formatCzk } from "@/lib/money";
 import { monthResult } from "@/lib/calc";
 
-export const metadata: Metadata = { title: "Numulo — plán" };
+export const metadata: Metadata = { title: "Plán" };
 export const dynamic = "force-dynamic";
 
 export default async function PlanPage({

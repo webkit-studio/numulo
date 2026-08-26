@@ -33,7 +33,7 @@ const total = rows.reduce((s, r) => s + r.amount, 0);
 ### Autorizaci dělá databáze, ne kód
 
 Každá tabulka má row-level security navázanou na členství v domácnosti
-(funkce `is_member(household_id)`). 16 tabulek, 16× zapnutá RLS, 57 policies.
+(funkce `is_member(household_id)`). 17 tabulek, na všech zapnutá RLS.
 
 Z toho plyne:
 
@@ -73,17 +73,34 @@ fungovat** a řešením není zrušit `httpOnly`, ale ten klient nepřidávat.
 specifikace mění vědomě — a pak se mění i test, v jednom commitu a s
 vysvětlením. Nikdy test neupravuj proto, aby prošel.
 
-### Model nikdy nečte řádky dat
+### Model navrhuje, kód rozhoduje — a data vidí jen tam, kde to jinak nejde
 
-`src/lib/ai/columns.ts` je jediné místo, kde se volá Claude. Dostane
-**nadpisy sloupců** výpisu a poznámku od uživatele. Žádnou částku, žádného
-obchodníka, žádné datum. Co vrátí, se ověří proti skutečným nadpisům
-a co nesedí, se zahodí.
+Veškerá komunikace s Claudem běží v Supabase Edge Function **`ai-worker`**
+(zdroj se deployuje přes MCP, v repu není) a jediné, co ji z aplikace volá,
+je `src/lib/ai/worker.ts`. `ANTHROPIC_API_KEY` žije výhradně v Supabase →
+Edge Functions → Secrets — Netlify žádný klíč nemá.
 
-Model tedy *mapuje*, rozhoduje kód. Bez `ANTHROPIC_API_KEY` se ta část
-přeskočí a import jede dál na deterministickém odhadu
-(`src/lib/import/mapping.ts`). **Nerozšiřuj to na parsování dat** — chyba
-v mapování sloupců je vidět, chyba v parsování řádku ne.
+Tři úlohy, tři úrovně přístupu k datům — každá nejmenší možná:
+
+| úloha | model vidí | model |
+|---|---|---|
+| mapování sloupců CSV | jen nadpisy sloupců | Haiku 4.5 |
+| kategorizace | jen názvy obchodníků (bez částek a účtů) | Haiku 4.5 |
+| přepis PDF výpisu | celý výpis — přepis jinak nejde | Sonnet 5 |
+
+Výstup modelu **nikdy nejde přímo do tabulek.** Přistane jako JSON
+v `ai_jobs.result` a aplikační akce (`src/app/actions/ai.ts`) rozhodne,
+co z něj zapíše: PDF řádky jdou stejným otiskem a pravidly jako CSV
+(`commitPreparedRows`), návrhy kategorií se stanou pravidly
+`merchant->category`, takže příští výpis se roztřídí úplně bez modelu.
+Vymyšlený nadpis sloupce, neexistující kategorie nebo nečitelné datum se
+zahodí při aplikaci.
+
+Proč Edge Function a ne server action: extrakce PDF běží déle, než smí žít
+funkce na Netlify (10 s). Vzor je fronta — akce založí řádek v `ai_jobs`,
+worker odpoví 202 a dopočítá na pozadí, UI se ptá na stav. Než worker sáhne
+na úlohu, přečte si ji **tokenem volajícího**, takže o vlastnictví pořád
+rozhoduje RLS.
 
 ### Žádný read-only seznam
 
@@ -155,6 +172,9 @@ Postgres + RLS   ← tady se rozhoduje, kdo co smí
 Čtení jde opačně a bez akcí: Server Component zavolá funkci z
 `src/lib/data/*`, ta se zeptá Supabase a vrátí hotový tvar pro UI.
 
+Dlouhé AI úlohy (PDF, kategorizace) tečou bokem přes frontu `ai_jobs`
+a Edge Function `ai-worker` — viz pravidlo o modelu v §1.
+
 **Server Action po zápisu volá `revalidatePath("/", "layout")`.** Ne
 z lenosti: změna jedné pravidelné platby hne povinnostmi, plánovaným,
 zbývá na útratu, denním limitem, cashflow i hotovostí — tedy skoro každou
@@ -175,7 +195,7 @@ obrazovkou. Revalidovat jen aktuální cestu by nechalo ostatní čísla stará.
 | `lib/import/mapping.ts` | nadpis sloupce → pole | `mapping.test.ts` |
 | `lib/import/fingerprint.ts` | otisk řádku (klíč na duplicity) | — |
 | `lib/import/pipeline.ts` | parsování → klasifikace → souhrn | — |
-| `lib/recurring/detect.ts` | co vypadá jako předplatné | `detect.test.ts` |
+| `lib/recurring/detect.ts` | co se opakuje (předplatné/měsíční platba) | `detect.test.ts` |
 | `lib/debts/match.ts` | párování plateb na dluhy | `match.test.ts` |
 | `lib/lists/registry.ts` | popis sloupců všech editovatelných seznamů | — |
 
@@ -186,7 +206,7 @@ obrazovkou. Revalidovat jen aktuální cestu by nechalo ostatní čísla stará.
 | `lib/data/household.ts` | přihlášený člověk + jeho domácnost, členové |
 | `lib/data/month.ts` | `getMonthSnapshot()` — **každé číslo na Přehledu jedním průchodem** |
 | `lib/data/months.ts` | které měsíce mají data, který zobrazit |
-| `lib/data/trends.ts` | cashflow, hotovost v čase, trendy, průměry |
+| `lib/data/trends.ts` | cashflow (poctivý forecast), trendy, průměry |
 | `lib/data/lists.ts` | řádky libovolného seznamu z registru |
 
 `getMonthSnapshot()` je schválně jeden velký objekt: čísla ze specifikace
@@ -256,9 +276,11 @@ tabulky, takže se nedá sáhnout jinam.
 Schéma žije v Supabase (projekt `Numulo`, region `eu-central-1`), migrace
 mají prefix `numulo_`. V repu není — pull jde přes `supabase db pull`.
 
-16 tabulek, všechny s `household_id` a stejnou čtveřicí policies
-(select/insert/update/delete přes `is_member`). Výjimka: `join_attempts`
-nemá **žádnou** policy schválně — čte ji jen `join_household()` zevnitř.
+17 tabulek, všechny s `household_id` a stejnou čtveřicí policies
+(select/insert/update/delete přes `is_member`). Dvě výjimky schválně:
+`join_attempts` nemá žádnou policy (čte ji jen `join_household()` zevnitř)
+a `ai_jobs` nemá update/delete pro uživatele — stav mění jen worker
+servisní rolí.
 
 Poznámky, které nejsou zřejmé ze schématu:
 
@@ -274,6 +296,14 @@ Poznámky, které nejsou zřejmé ze schématu:
   U `interval = 'monthly'` se `month` ignoruje.
 - `categories.monthly_limit = NULL` znamená „limit nikdo nenastavil“.
   Nula by znamenala „nesmíš utratit nic“ a obálka by hned svítila červeně.
+- `categories.parent_id` dělá podkategorie. Limity, obálky a trendy žijí
+  na rodičích; děti jsou rozpad („z toho Fastfood…“). Transakce může mířit
+  na dítě — souhrny ji sčítají do rodiče (`month.ts`, `trends.ts`).
+- `transactions.vs` a `counter_account` plní import a čte párování dluhů
+  (`matchDebtPayments`). Bez nich zbývá jen scan popisu.
+- Forecast v cashflow **nikdy nepovažuje rozpočet za příjem**. Budoucí
+  příjem = jen plánované příjmy; nic naplánovaného = čára dolů. To je
+  vědomé rozhodnutí po zpětné vazbě — příjmy domácnosti jsou nepravidelné.
 
 ---
 
@@ -326,6 +356,8 @@ databáze nebo grepem; hádat se nemá.
 - **`design_handoff_numo/`** — zadání od uživatele. Referenční, needituje se.
 - **`src/middleware.ts`** — matcher schválně nepouští `_next/*` a ikony;
   rozšíření na všechno by protáhlo každý statický soubor ověřením session.
+  Session se ověřuje lokálně podpisem JWT (`getClaims`), ne síťovým
+  `getUser` — vrátit to zpátky znamená ~200 ms navíc na každý klik.
 - **`.env.local`** — není v gitu a nemá být.
 - **Netlify env vars** — `NEXT_PUBLIC_SUPABASE_URL` a
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` musí existovat v konfiguraci
@@ -347,3 +379,6 @@ pomine, věta odsud zmizí.
 - **Změna hesla v Nastavení účtu není duplicita k odkazu v e-mailu.**
   Rutinní změna nemá viset na odesílateli, kterého jde vyčerpat; odkaz je
   pro toho, kdo se dovnitř nedostane vůbec. Neslučuj to.
+- **Výchozí měsíc je vždycky aktuální**, i když v něm ještě nejsou data.
+  Verze, která otvírala „nejnovější měsíc s daty“, ukázala 26. srpna
+  červenec — a to je odpověď na otázku, kterou nikdo nepoložil.
