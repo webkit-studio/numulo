@@ -1,8 +1,10 @@
 # Numulo — čti tohle před první změnou
 
-Rozpočet pro jednu domácnost. Next.js 15 (App Router) na Netlify, data
-a přihlašování v Supabase. Čeština v UI, angličtina v komentářích kódu,
-čeština v commit messages.
+Rozpočet pro jednu domácnost. Next.js 15 (App Router) na Vercelu — funkce
+běží ve Frankfurtu (`fra1` ve `vercel.json`), ve stejném regionu jako data
+a přihlašování v Supabase. Nasazení = merge do `main`, Vercel staví sám;
+stará adresa na Netlify dosluhuje. Čeština v UI, angličtina v komentářích
+kódu, čeština v commit messages.
 
 Tenhle soubor není popis funkcí — ty jsou v README. Je to seznam věcí,
 které v téhle codebase nejsou náhoda, a rozbijí se tiše, když se změní
@@ -95,7 +97,7 @@ vysvětlením. Nikdy test neupravuj proto, aby prošel.
 Veškerá komunikace s Claudem běží v Supabase Edge Function **`ai-worker`**
 (zdroj se deployuje přes MCP, v repu není) a jediné, co ji z aplikace volá,
 je `src/lib/ai/worker.ts`. `ANTHROPIC_API_KEY` žije výhradně v Supabase →
-Edge Functions → Secrets — Netlify žádný klíč nemá.
+Edge Functions → Secrets — hosting aplikace žádný klíč nemá.
 
 Tři úlohy, tři úrovně přístupu k datům — každá nejmenší možná:
 
@@ -114,7 +116,7 @@ Vymyšlený nadpis sloupce, neexistující kategorie nebo nečitelné datum se
 zahodí při aplikaci.
 
 Proč Edge Function a ne server action: extrakce PDF běží déle, než smí žít
-funkce na Netlify (10 s). Vzor je fronta — akce založí řádek v `ai_jobs`,
+serverová funkce hostingu (~10 s). Vzor je fronta — akce založí řádek v `ai_jobs`,
 worker odpoví 202 a dopočítá na pozadí, UI se ptá na stav. Než worker sáhne
 na úlohu, přečte si ji **tokenem volajícího**, takže o vlastnictví pořád
 rozhoduje RLS.
@@ -157,10 +159,11 @@ Stavy se pojmenovávají *v klidu / dochází / nad plánem*, nikdy jen barvou.
 ### Repozitář je veřejný
 
 `webkit-studio/numulo` je public. **Žádný klíč, heslo ani SMTP údaj do
-repa.** `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` je veřejný záměrně (sám
-o sobě nedává nic, RLS drží zbytek), ale `ANTHROPIC_API_KEY`, servisní klíč
-Supabase a klíč Resendu patří do proměnných prostředí na Netlify,
-respektive do nastavení Supabase.
+repa.** Jediné dvě hodnoty, které v repu jsou (`.env.production` a konstanty
+v `src/lib/supabase/config.ts`), jsou adresa projektu a publishable klíč —
+veřejné záměrně: jedou v každém požadavku prohlížeče a RLS drží zbytek.
+`ANTHROPIC_API_KEY`, servisní klíč Supabase a klíč Resendu patří do
+nastavení Supabase, respektive Resendu — hosting nenese žádné tajemství.
 
 Kontrola před pushem — hledá klíče v plné délce, takže placeholdery
 v `.env.example` nehlásí:
@@ -327,7 +330,7 @@ Poznámky, které nejsou zřejmé ze schématu:
 ## 6. Než pushneš
 
 ```bash
-npm test        # 72 testů, 4 soubory — musí projít všechny
+npm test        # 73 testů, 4 soubory — musí projít všechny
 npm run build   # produkční build, musí být bez chyby
 npx tsc --noEmit
 ```
@@ -353,7 +356,7 @@ Takže:
 - **píše se v přítomném čase** — „e-maily jdou přes Resend“, ne „přešli
   jsme na Resend“,
 - **staré tvrzení se nahradí, nepřipíše se pod něj**,
-- **čísla se opraví** — když přibude test, změň „72 testů“; když přibude
+- **čísla se opraví** — když přibude test, změň „73 testů“; když přibude
   tabulka, změň „šestnáct tabulek“. Nesedící číslo v dokumentaci učí
   čtenáře nevěřit zbytku,
 - **žádná sekce „changelog“ ani „co je nového“.**
@@ -375,11 +378,14 @@ databáze nebo grepem; hádat se nemá.
   rozšíření na všechno by protáhlo každý statický soubor ověřením session.
   Session se ověřuje lokálně podpisem JWT (`getClaims`), ne síťovým
   `getUser` — vrátit to zpátky znamená ~200 ms navíc na každý klik.
-- **`.env.local`** — není v gitu a nemá být.
-- **Netlify env vars** — `NEXT_PUBLIC_SUPABASE_URL` a
-  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` musí existovat v konfiguraci
-  projektu, ne jen lokálně. Když chybí, aplikace to řekne jménem proměnné
-  (`src/lib/supabase/config.ts`) místo prázdné pětistovky.
+- **`.env.local`** — není v gitu a nemá být. Bez něj mluví lokální dev
+  s produkční databází (viz níž) — na dev databázi ho vytvoř.
+- **`src/lib/supabase/config.ts`** — adresa a publishable klíč jsou schválně
+  konstanty ve zdrojáku s env přepisem, ne čtení z prostředí. Edge
+  middleware čte env až za běhu a runtime Vercelu mu žádné hodnoty nenese;
+  propis přes `env` v next.config umřel na obnovené build cache. Nevracej
+  to na „čisté“ čtení z `process.env` — přesně tak vznikla celá appka
+  v pětistovkách. Hodnoty jsou veřejné (viz §Repozitář je veřejný).
 
 ---
 
