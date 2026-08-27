@@ -1,12 +1,14 @@
 # Numulo
 
-Rozpočet pro jednu domácnost. Next.js 15 na Netlify, data a přihlašování
-v Supabase.
+Rozpočet pro jednu domácnost. Next.js 15 na Vercelu — funkce běží ve
+Frankfurtu, ve stejném regionu jako databáze — data a přihlašování
+v Supabase. Nasazuje se samo z větve `main`.
 
-**Živě: [numulo.netlify.app](https://numulo.netlify.app)**
+**Živě: [numulo.vercel.app](https://numulo.vercel.app)** — stará adresa
+numulo.netlify.app dosluhuje.
 
 > Pracuješ na tomhle repu s Claudem nebo jiným agentem? Přečti si nejdřív
-> [`CLAUDE.md`](CLAUDE.md) — je tam devět pravidel, která se dají porušit,
+> [`CLAUDE.md`](CLAUDE.md) — je tam deset pravidel, která se dají porušit,
 > aniž by cokoli spadlo.
 
 ## Co to dělá
@@ -73,25 +75,28 @@ ostatní funguje dál; tlačítka to řeknou.
 
 ```bash
 npm install
-cp .env.example .env.local   # a doplnit klíče ze Supabase
-npm run dev                  # :3000
+npm run dev   # :3000 — bez .env.local mluví s PRODUKČNÍ databází
 ```
 
-| proměnná | kde | k čemu | povinná |
-|---|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Netlify + `.env.local` | adresa projektu | ano |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Netlify + `.env.local` | veřejný klíč (RLS hlídá zbytek) | ano |
-| `ANTHROPIC_API_KEY` | **Supabase → Edge Functions → Secrets** | PDF import a kategorizace | ne |
+Adresa Supabase projektu a publishable klíč jsou přímo v repu
+(`.env.production` + konstanty v `src/lib/supabase/config.ts`) — obě hodnoty
+jsou veřejné z podstaty, jedou v každém požadavku prohlížeče a data hlídá
+row-level security. Kdo chce vývoj proti jiné databázi, přepíše je
+v `.env.local` (vzor v `.env.example`).
 
-Když povinná proměnná chybí, aplikace to řekne jménem té proměnné —
-ne prázdnou pětistovkou.
+| proměnná | kde | k čemu |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | v repu, přepis v `.env.local` | adresa projektu |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | v repu, přepis v `.env.local` | veřejný klíč (RLS hlídá zbytek) |
+| `ANTHROPIC_API_KEY` | **Supabase → Edge Functions → Secrets** | PDF import a kategorizace (volitelné) |
 
-**Heslo ani servisní klíč nikdy do repa.** Tenhle repozitář je veřejný.
+**Heslo ani servisní klíč nikdy do repa.** Tenhle repozitář je veřejný —
+jediné dvě hodnoty, které v něm smí být, jsou ty dvě veřejné výše.
 
 ## Testy
 
 ```bash
-npm test        # 72 testů — výpočty, import, detekce, párování dluhů
+npm test        # 73 testů — výpočty, import, detekce, párování dluhů
 npm run build   # produkční build
 npx tsc --noEmit
 ```
