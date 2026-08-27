@@ -10,20 +10,28 @@
  *
  * So the check happens here, once, with the variable's name in the message.
  * The failure is the same failure; the difference is that it can be read.
+ *
+ * The literal `process.env.NEXT_PUBLIC_…` expressions below are load-bearing:
+ * Next.js inlines only literal member access at build time, and the edge
+ * middleware bundle has no other way to see values from `.env.production`.
+ * A dynamic `process.env[name]` here means a middleware that 500s on Vercel
+ * while working everywhere the runtime carries the variables. That happened
+ * too.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-function required(name: string): string {
-  const value = process.env[name];
+function required(name: string, value: string | undefined): string {
   if (!value) {
     throw new Error(
       `Chybí proměnná prostředí ${name}. ` +
-        "Na Netlify ji nastav v Project configuration → Environment variables, " +
-        "lokálně v .env.local (vzor je v .env.example).",
+        "Veřejné hodnoty patří do .env.production v repu, " +
+        "lokálně do .env.local (vzor je v .env.example).",
     );
   }
   return value;
 }
 
-export const supabaseUrl = (): string => required("NEXT_PUBLIC_SUPABASE_URL");
-export const supabaseKey = (): string => required("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+export const supabaseUrl = (): string =>
+  required("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
+export const supabaseKey = (): string =>
+  required("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
