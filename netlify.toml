@@ -1,0 +1,8 @@
+# Netlify builds the Next app; the plugin turns App Router routes into
+# functions. No adapter config beyond this is needed.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

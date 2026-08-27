@@ -1,28 +1,20 @@
+import Link from "next/link";
 import type { Metadata } from "next";
-import { PasswordForm } from "./password-form";
+import { AuthShell } from "@/components/auth-shell";
+import { ResetRequestForm } from "./reset-request-form";
 
-export const metadata: Metadata = { title: "numo — heslo" };
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Obnova hesla" };
 
-export default async function PasswordPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
-  const token = typeof params.token === "string" ? params.token : null;
-
+export default function ForgottenPasswordPage() {
   return (
-    <main className="login-screen">
-      <div className="login-card">
-        <h1 className="login-wordmark">numo</h1>
-        <p className="login-lede">
-          {token
-            ? "Zvol si nové heslo."
-            : "Zadej svůj e-mail. Když heslo ještě nemáš, rovnou si ho nastavíš; jinak ti pošleme odkaz."}
-        </p>
-        <PasswordForm token={token} />
+    <AuthShell
+      title="Zapomenuté heslo"
+      lede="Napiš e-mail a pošleme ti odkaz na nastavení nového."
+    >
+      <ResetRequestForm />
+      <div className="auth-links">
+        <Link href="/prihlaseni">Zpátky na přihlášení</Link>
       </div>
-    </main>
+    </AuthShell>
   );
 }

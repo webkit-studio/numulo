@@ -1,85 +1,127 @@
-# numo
+# Numulo
 
-Rodinná finanční appka pro dvě osoby (Lukáš, Věrka), CZK, účet „Domácnost".
-Bez napojení na banky — data jdou dovnitř importem CSV výpisů (Air Bank,
-Revolut) a výjimečně ručním zápisem.
+Rozpočet pro jednu domácnost. Next.js 15 na Netlify, data a přihlašování
+v Supabase.
 
-numo odpovídá na tři otázky: **Můžu dnes utrácet? Zvládáme tenhle měsíc?
-Lezeme z toho ven?**
+**Živě: [numulo.netlify.app](https://numulo.netlify.app)**
 
-**Stav: fáze 1 (kostra) hotová.** Co běží: nasazovatelná appka na Webflow
-Cloud, brána hesla, databázové schéma s migrací, seed uživatelů a kategorií,
-a jádro výpočtů s testy. Obrazovky se staví ve fázích 2–4 — čeká se na
-vzorky CSV a na design bundle. Detaily a otevřené otázky: `docs/decisions.md`.
+> Pracuješ na tomhle repu s Claudem nebo jiným agentem? Přečti si nejdřív
+> [`CLAUDE.md`](CLAUDE.md) — je tam devět pravidel, která se dají porušit,
+> aniž by cokoli spadlo.
 
-## Stack
+## Co to dělá
 
-| Vrstva      | Volba                                                    |
-| ----------- | -------------------------------------------------------- |
-| Framework   | Next.js 15 (App Router), React 19                        |
-| Hosting     | Webflow Cloud (Cloudflare Workers přes OpenNext), mount `/numo` |
-| Databáze    | Webflow Cloud SQLite (D1) + Drizzle ORM, verzované migrace |
-| Soubory     | Webflow Cloud Object Storage (archiv syrových CSV)        |
-| Testy       | Vitest                                                    |
-| AI          | Claude API (`claude-haiku-4-5`), výhradně server-side, volitelné |
+| obrazovka | odpovídá na otázku |
+|---|---|
+| **Přehled** | Můžu dneska utrácet a jak na tom jsme? |
+| **Plán** | Jak nastavíme a zvládáme tenhle měsíc? |
+| **Pravidelné** | Co jede samo a je to zaplacené? |
+| **Vývoj** | Jak se to vyvíjí — a co se stane, když nepřijde žádný klient? |
+| **Dluhy** | Co dlužíme a kdy budeme čistí? |
+| **Transakce** | Najdu a opravím konkrétní platbu. |
+| **Import** | Dostanu výpis z banky dovnitř. |
 
-## Struktura
+**Příjmy i výdaje se čtou z transakcí — nikde se nic nenastavuje.** Žádný
+měsíční rozpočet v nastavení: co přišlo, je příjem; když nepřišlo nic,
+čísla jsou v mínusu, protože jsou.
 
-```
-migrations/            verzované SQL migrace (aplikuje je Webflow Cloud sám)
-src/
-  app/                 App Router — stránky a API routy
-  db/                  Drizzle schéma a připojení k D1
-  lib/
-    auth/              podepsaná session cookie a brána hesla
-    calc/              čisté výpočtové funkce + unit testy
-    date.ts money.ts   ISO datumy a peníze v haléřích
-  middleware.ts        brána hesla před celou appkou
-  styles/tokens.css    design tokeny (zatím placeholder)
-docs/                  nastavení, rozhodnutí, mapping tokenů
-```
+Ke každému číslu vede ⓘ s rozpadem, jak vzniklo. Stav se nikdy neříká jen
+barvou — vždycky je u něj slovo (*v klidu / dochází / nad plánem*).
 
-Dvě pravidla, která drží kód čitelný:
+Čísla se počítají v `src/lib/calc` — čisté funkce bez databáze, ověřené
+testy proti demu ze specifikace. Když se něco na obrazovce nezdá, odpověď
+je tam.
 
-- **Peníze jsou celá čísla v haléřích.** Žádné floaty. Výdaje záporné.
-  Převod ×100 se smí dít jen v `src/lib/money.ts`.
-- **Datumy jsou ISO stringy** (`YYYY-MM-DD`, `YYYY-MM`). Řadí se i porovnávají
-  lexikograficky, takže výpočty nepotřebují `Date` ani časové zóny.
+## Účty
 
-## Lokální vývoj
+Uživatel se zaregistruje, pak se **kódem** připojí k domácnosti, nebo si
+založí vlastní. Kód najde ten, kdo domácnost vede, v Nastavení účtu —
+a dá se kdykoli vyrobit nový. Deset špatných pokusů za hodinu a je konec.
+
+Kdo co uvidí, rozhoduje row-level security podle členství v domácnosti,
+ne podmínka v aplikačním kódu.
+
+## Import
+
+Jedno okno, formát je starost Numula: **CSV** se parsuje deterministicky
+(kódování, oddělovač a sloupce si výpis přečte sám), **PDF** přepíše model.
+Obě cesty končí ve stejných dveřích — stejný otisk, stejná pravidla:
+
+- **Přidáno** — sedělo pravidlo, kategorie je nastavená
+- **Duplicitní** — stejný otisk už v databázi je, neuloží se
+- **Ke schválení** — takového obchodníka nikdo ještě neviděl
+
+Po importu se platby s VS nebo číslem účtu samy spárují na dluhy.
+
+## AI
+
+Model dělá tři věci a všechny běží v Supabase Edge Function `ai-worker`,
+kde jediné žije `ANTHROPIC_API_KEY`:
+
+1. **Mapování sloupců CSV** — vidí jen nadpisy, nikdy data (Haiku 4.5).
+2. **Přepis PDF výpisu** — vidí celý výpis, to jinak nejde (Sonnet 5).
+3. **Kategorizace** — vidí jen **názvy obchodníků**, žádné částky ani účty
+   (Haiku 4.5). Návrhy se ukládají jako pravidla `obchodník → kategorie`,
+   takže příští výpis se roztřídí bez modelu. Umí navrhnout podkategorii
+   (Jídlo › Fastfood) — obálky a trendy je sčítají do rodiče.
+
+Výstup modelu **nikdy nejde přímo do tabulek**: přistane jako JSON v
+`ai_jobs.result` a aplikace rozhodne, co z něj zapíše. Bez klíče všechno
+ostatní funguje dál; tlačítka to řeknou.
+
+## Spuštění
 
 ```bash
 npm install
-cp .env.example .dev.vars     # vyplň NUMO_PASSWORD
-npm run db:apply:local        # založí lokální databázi a nasype seed
-npm run dev                   # http://localhost:3000/numo
+cp .env.example .env.local   # a doplnit klíče ze Supabase
+npm run dev                  # :3000
 ```
 
-Appka na Workers runtime (tak, jak poběží v produkci):
+| proměnná | kde | k čemu | povinná |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Netlify + `.env.local` | adresa projektu | ano |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Netlify + `.env.local` | veřejný klíč (RLS hlídá zbytek) | ano |
+| `ANTHROPIC_API_KEY` | **Supabase → Edge Functions → Secrets** | PDF import a kategorizace | ne |
+
+Když povinná proměnná chybí, aplikace to řekne jménem té proměnné —
+ne prázdnou pětistovkou.
+
+**Heslo ani servisní klíč nikdy do repa.** Tenhle repozitář je veřejný.
+
+## Testy
 
 ```bash
-npm run preview               # http://localhost:8787/numo
+npm test        # 72 testů — výpočty, import, detekce, párování dluhů
+npm run build   # produkční build
+npx tsc --noEmit
 ```
 
-## Příkazy
+Testy výpočtů jsou připíchnuté na demo měsíc ze specifikace. Když spadnou
+po změně vzorce, znamená to, že se výsledek rozešel se zadáním — ne že je
+vadný test.
 
-| Příkaz                  | Co dělá                                        |
-| ----------------------- | ---------------------------------------------- |
-| `npm run dev`           | vývojový server                                |
-| `npm run preview`       | build + běh na Workers runtime lokálně         |
-| `npm test`              | unit testy                                     |
-| `npm run typecheck`     | kontrola typů                                  |
-| `npm run db:generate`   | vygeneruje migraci ze změn ve schématu         |
-| `npm run db:apply:local`| aplikuje migrace na lokální databázi           |
-| `npm run cf-typegen`    | přegeneruje typy po změně bindingů             |
+## Databáze
 
-## Nasazení
+Schéma je v Supabase (migrace `numulo_*`). Sedmnáct tabulek, na všech
+zapnutá row-level security navázaná na členství v domácnosti. Jediné dvě
+cesty skrz tu zeď jsou `create_household()` a `join_household()`, a každá
+si kontroluje svoje.
 
-Push do `main` = produkce, větev `dev` = staging. Webflow Cloud si build i
-migrace spustí sám. První nastavení (klikací kroky) je v
-`docs/setup-webflow-cloud.md`.
+Peníze jsou všude celá čísla haléřů. Převod na koruny dělá jenom
+`src/lib/money.ts`.
 
-## Bezpečnost
+## E-maily
 
-Heslo a API klíč se zadávají v UI Webflow Cloudu, nikdy do repa. `.dev.vars`
-je v `.gitignore`.
+Potvrzení registrace a obnova hesla jdou přes Resend z domény
+`numulo.webkit.studio`. Vestavěný mailer Supabase posílá jen pár zpráv za
+hodinu, takže na ostrý provoz nestačí.
+
+Heslo se dá změnit přímo v Nastavení účtu, bez e-mailu — odkaz na obnovu
+je pro toho, kdo se dovnitř nedostane vůbec.
+
+## Zadání
+
+`design_handoff_numo/` obsahuje specifikaci, design tokeny a screenshoty,
+podle kterých je aplikace postavená. Je to reference, ne kód — needituje se.
+Když se specifikace a design tokeny neshodnou, vyhrává specifikace:
+screenshoty jsou vyrenderované z ní.

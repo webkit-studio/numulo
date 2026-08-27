@@ -1,46 +1,66 @@
-import Link from "next/link";
-import { MonthLabel } from "./money";
+"use client";
 
-/**
- * Month navigation as plain links, so it works without JavaScript and every
- * month is a shareable URL.
- */
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { monthLabel } from "@/lib/date";
+
+/** The month pill top right. Empty list means the household has no data yet. */
 export function MonthPicker({
   months,
   current,
-  basePath,
+  dayNote,
 }: {
   months: string[];
   current: string;
-  basePath: string;
+  dayNote?: string;
 }) {
-  const index = months.indexOf(current);
-  const previous = index > 0 ? months[index - 1] : null;
-  const next = index >= 0 && index < months.length - 1 ? months[index + 1] : null;
-  const href = (month: string) =>
-    `${basePath}?mesic=${month}`.replace("/?", "/?");
+  const router = useRouter();
+  const params = useSearchParams();
+  const [open, setOpen] = useState(false);
 
   return (
-    <nav className="month-picker" aria-label="Výběr měsíce">
-      {previous ? (
-        <Link href={href(previous)} aria-label="Předchozí měsíc">
-          ‹
-        </Link>
-      ) : (
-        <span aria-hidden="true">‹</span>
-      )}
+    <div className="month-picker">
+      <button
+        type="button"
+        className="month-pill"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        disabled={months.length <= 1}
+      >
+        <span>{monthLabel(current)}</span>
+        {dayNote ? <span className="month-day">{dayNote}</span> : null}
+      </button>
 
-      <strong>
-        <MonthLabel month={current} />
-      </strong>
-
-      {next ? (
-        <Link href={href(next)} aria-label="Další měsíc">
-          ›
-        </Link>
-      ) : (
-        <span aria-hidden="true">›</span>
-      )}
-    </nav>
+      {open ? (
+        <>
+          <button
+            type="button"
+            className="overlay"
+            aria-label="Zavřít"
+            onClick={() => setOpen(false)}
+          />
+          <div className="month-menu fade" role="listbox">
+            {months.map((month) => (
+              <button
+                key={month}
+                type="button"
+                role="option"
+                aria-selected={month === current}
+                className={`month-option${month === current ? " is-active" : ""}`}
+                onClick={() => {
+                  const next = new URLSearchParams(params);
+                  next.set("mesic", month);
+                  router.push(`?${next.toString()}`);
+                  setOpen(false);
+                }}
+              >
+                {monthLabel(month)}
+                {month === current ? <span aria-hidden="true">✓</span> : null}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
+    </div>
   );
 }

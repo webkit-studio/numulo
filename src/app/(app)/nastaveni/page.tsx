@@ -1,35 +1,82 @@
 import type { Metadata } from "next";
-import { getAccount } from "@/lib/data/queries";
+import { getMembers, getSession } from "@/lib/data/household";
 import { SettingsForm } from "./settings-form";
+import { JoinCode } from "./join-code";
+import { ChangePassword } from "./change-password";
+import { halereToCzk } from "@/lib/money";
 
-export const metadata: Metadata = { title: "numo — nastavení" };
+export const metadata: Metadata = { title: "Nastavení účtu" };
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const account = await getAccount();
+  const { household, viewer } = await getSession();
+  if (!household || !viewer) return null;
+
+  const members = await getMembers(household.id);
 
   return (
     <>
       <header className="page-head">
         <div>
-          <h1>Nastavení</h1>
-          <p className="page-sub">Účet {account.name}</p>
+          <h1 className="page-title">Nastavení účtu</h1>
+          <p className="page-sub">{household.name}</p>
         </div>
       </header>
 
       <section className="card">
-        <header className="card-head">
-          <h2>Rozpočet a počáteční stav</h2>
-        </header>
-        <p className="card-lede">
-          Dokud počáteční stav nezadáš, Rezerva nemá z čeho počítat a na
-          Přehledu se místo čísla ukazuje výzva.
-        </p>
+        <div className="card-head">
+          <h2 className="card-title">Účet</h2>
+          <p className="card-sub">
+            Příjmy i výdaje žijí v transakcích — tady je jen to, co se jinam
+            nevejde: název a počáteční stav, od kterého Rezerva počítá.
+          </p>
+        </div>
         <SettingsForm
-          monthlyBudget={account.monthlyBudget}
-          initialBalance={account.initialBalance}
-          initialBalanceDate={account.initialBalanceDate}
+          householdId={household.id}
+          name={household.name}
+          initialBalance={halereToCzk(household.initial_balance)}
+          initialBalanceDate={household.initial_balance_date}
+          kind={household.kind}
         />
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2 className="card-title">Sdílení</h2>
+          <p className="card-sub">
+            Kdo má tenhle kód, dostane se k financím domácnosti. Předej ho jen tomu,
+            komu důvěřuješ — a když se rozšíří, vyrob nový.
+          </p>
+        </div>
+        <JoinCode householdId={household.id} code={household.join_code} />
+
+        <ul className="member-list">
+          {members.map((member) => (
+            <li key={member.userId} className="member">
+              <span className="avatar" aria-hidden="true">
+                {member.name.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="member-name">
+                {member.name}
+                {member.userId === viewer.id ? <span className="member-you"> (ty)</span> : null}
+              </span>
+              <span className="member-role">
+                {member.role === "owner" ? "vlastník" : "člen"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2 className="card-title">Přihlášení</h2>
+          <p className="card-sub">
+            Heslo se dá změnit tady, bez e-mailu. Odkaz na obnovu je pro toho,
+            kdo se dovnitř nedostane vůbec.
+          </p>
+        </div>
+        <ChangePassword email={viewer.email} />
       </section>
     </>
   );
