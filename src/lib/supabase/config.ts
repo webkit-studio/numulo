@@ -1,37 +1,29 @@
 /**
  * ─────────────────────────────────────────────────────────────────────────────
- * The two values the app cannot start without.
+ * The two values the app cannot start without — with the production values
+ * baked in as fallbacks, deliberately.
  *
- * Reading them straight out of `process.env` with a `!` compiles fine and then
- * fails at run time inside supabase-js, which throws on every single route —
- * including the login page. The result is a site that is entirely 500 and says
- * nothing about why. That happened: a deploy preview built without the
- * publishable key looked exactly like a broken app.
+ * Both are public by design: they ride in every browser request of everyone
+ * who opens the app, and row-level security is what guards the data. This app
+ * has exactly one database, so its public address may live in its public code.
  *
- * So the check happens here, once, with the variable's name in the message.
- * The failure is the same failure; the difference is that it can be read.
+ * The fallbacks are not laziness; they are the only shape that survives every
+ * runtime this app has met. Next.js inlines `NEXT_PUBLIC_*` only into browser
+ * bundles; the edge middleware reads env at run time, and Vercel's edge
+ * runtime carries nothing from `.env.production`. Routing the values through
+ * `env` in next.config.ts died on a restored build cache. A constant in the
+ * source cannot be lost by any of that.
  *
- * The literal `process.env.NEXT_PUBLIC_…` expressions below are load-bearing:
- * Next.js inlines only literal member access at build time, and the edge
- * middleware bundle has no other way to see values from `.env.production`.
- * A dynamic `process.env[name]` here means a middleware that 500s on Vercel
- * while working everywhere the runtime carries the variables. That happened
- * too.
+ * The env override still wins everywhere it exists — `.env.local` for a dev
+ * database, hosting env for another deployment. Without any override, local
+ * dev talks to PRODUCTION: fine for this household, worth knowing out loud.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-function required(name: string, value: string | undefined): string {
-  if (!value) {
-    throw new Error(
-      `Chybí proměnná prostředí ${name}. ` +
-        "Veřejné hodnoty patří do .env.production v repu, " +
-        "lokálně do .env.local (vzor je v .env.example).",
-    );
-  }
-  return value;
-}
+const URL_FALLBACK = "https://azsocpwpbopgzsrynxia.supabase.co";
+const KEY_FALLBACK = "sb_publishable_QaGFoDeY_Rcw0n_GUjD0cw_54TmUuTi";
 
 export const supabaseUrl = (): string =>
-  required("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
+  process.env.NEXT_PUBLIC_SUPABASE_URL || URL_FALLBACK;
 export const supabaseKey = (): string =>
-  required("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || KEY_FALLBACK;
